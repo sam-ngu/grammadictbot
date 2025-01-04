@@ -16,7 +16,7 @@ class Config:
     def __init__(self, first_run=False, **kwargs):
         if kwargs:
             self.args = kwargs
-            self.module = True
+            self.module = "config" not in kwargs
         else:
             self.args = sys.argv
             self.module = False
@@ -44,9 +44,13 @@ class Config:
                     self.app_id = app_id
                 else:
                     self.app_id = "com.instagram.android"
-        elif "--config" in self.args:
+        elif "config" in self.args or "--config" in self.args:
             try:
-                file_name = self.args[self.args.index("--config") + 1]
+                if "config" in self.args:
+                    file_name = self.args.get('config')
+                else:
+                    file_name = self.args[self.args.index("--config") + 1]
+                # file_name = self.args[self.args.index("--config") + 1]
                 if not file_name.endswith((".yml", ".yaml")):
                     logger.error(
                         f"You have to specify a *.yml / *.yaml config file path (For example 'accounts/your_account_name/config.yml')! \nYou entered: {file_name}, abort."
@@ -160,7 +164,7 @@ class Config:
                 logger.debug(f"Arguments used: {' '.join(sys.argv[1:])}")
                 if self.config:
                     logger.debug(f"Config used: {self.config}")
-                if len(sys.argv) <= 1:
+                elif len(sys.argv) <= 1:
                     self.parser.print_help()
                     exit(0)
         if self.module:

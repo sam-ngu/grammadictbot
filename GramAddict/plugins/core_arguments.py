@@ -408,4 +408,11 @@ class CoreArguments(Plugin):
                 "help": "don't ask the user to press enter to continue with an untested IG version",
                 "action": "store_true",
             },
+            {
+                "arg": "--log-file-dir",
+                "nargs": None,
+                "help": "directory path for the logs",
+                "metavar": "",
+                "default": "logs",
+            },
         ]

@@ -58,8 +58,8 @@ def start_bot(**kwargs):
 
     # Pre-Load Config
     configs = Config(first_run=True, **kwargs)
-    configure_logger(configs.debug, configs.username)
-    if not kwargs:
+    configure_logger(configs.debug, configs.username, configs.config.get('log-file-dir'))
+    if "config" in kwargs or not kwargs:
         if "--config" not in configs.args:
             logger.info(
                 "It's strongly recommend to use a config.yml file. Follow these links for more details: https://docs.gramaddict.org/#/configuration and https://github.com/GramAddict/bot/tree/master/config-examples",

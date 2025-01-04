@@ -78,14 +78,26 @@ def main():
   # exec python run.py
   cwd = Path(__file__).parent
   print('running grammadict', flush=True)
-  # TODO: explore how to run gramaddict from the run function without starting a new process
-  # GramAddict.run(config=cwd.joinpath('accounts/' + ig_username + '/config.yml'))
-  cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
-  print('running ', cmd, flush=True)
-  process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  process.wait()
-  stdout, stderr = process.communicate()
-  print(stdout, stderr, flush=True)
+  os.chdir(cwd.__str__())
+
+  GramAddict.run(config=cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
+
+
+  # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
+  # print('running ', cmd, flush=True)
+  # process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+  # process.wait()
+  # stdout, stderr = process.communicate()
+  # print(stdout, stderr, flush=True)
 
 if __name__ == "__main__":
+  # fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
+
+  # configyml = yaml.safe_load(fisherman_payload['config.yml'])
+  # ig_username = configyml['username']
+
+  # # print(configyml, flush=True)
+  # cwd = Path(__file__).parent
+
+  # GramAddict.run(config=cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
   main()
