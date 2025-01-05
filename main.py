@@ -49,6 +49,10 @@ def prepare_android_machine(profile_id: str, social_username: str):
 
   igsession.init_ig_session(profile_id, social_username)
   
+def shutdown():
+  # this will shutdown the docker container
+  subprocess.run('kill 1', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
+
 
 def main():
   fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
@@ -80,8 +84,12 @@ def main():
   print('running grammadict', flush=True)
   os.chdir(cwd.__str__())
 
-  GramAddict.run(config=cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
+  if not "--config" in sys.argv:
+    sys.argv.append("--config")
+    sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
+  GramAddict.run()
+  # shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
   # print('running ', cmd, flush=True)
@@ -98,6 +106,6 @@ if __name__ == "__main__":
 
   # # print(configyml, flush=True)
   # cwd = Path(__file__).parent
-
-  # GramAddict.run(config=cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
+  
+  # GramAddict.run()
   main()

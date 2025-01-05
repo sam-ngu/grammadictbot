@@ -58,6 +58,7 @@ def start_bot(**kwargs):
 
     # Pre-Load Config
     configs = Config(first_run=True, **kwargs)
+
     configure_logger(configs.debug, configs.username, configs.config.get('log-file-dir'))
     if "config" in kwargs or not kwargs:
         if "--config" not in configs.args:
@@ -237,7 +238,7 @@ def start_bot(**kwargs):
             jobs_list = random.sample(configs.enabled, len(configs.enabled))
         else:
             jobs_list = configs.enabled
-
+        
         if "analytics" in jobs_list:
             jobs_list.remove("analytics")
             if configs.args.analytics:
