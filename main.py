@@ -89,7 +89,7 @@ def main():
     sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
   GramAddict.run()
-  # shutdown()
+  shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
   # print('running ', cmd, flush=True)
