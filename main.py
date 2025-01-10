@@ -36,7 +36,7 @@ def prepare_android_machine(profile_id: str, social_username: str):
     # 'adb connect emulator-5554',
     # 'adb -s emulator-5554 wait-for-device',
     'adb install /home/androidusr/instagram.apk',
-    '/home/androidusr/miniconda3/bin/python -m uiautomator2 init'
+    'python3 -m uiautomator2 init'
   )
 
   for cmd in pipelines:
