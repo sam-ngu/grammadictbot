@@ -133,7 +133,8 @@ def login(ig_username: str):
 
   connected = check_adb_connection()
 
-  device = create_device(configs.device_id, configs.args['app-id'])
+  print('app id is ', configs.args.app_id)
+  device = create_device(configs.device_id, configs.args.app_id)
 
   open_instagram(device);
 
