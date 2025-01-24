@@ -21,7 +21,7 @@ def storage_client():
                       endpoint_url=os.environ['AWS_S3_ENDPOINT_URL'])
 
 
-def save_session_files(profile_id: str):
+def save_session_files(profile_id: str, social_username: str):
   cwd = Path("~/.gramaddict").expanduser()
   if not cwd.exists():
     cwd.mkdir()
@@ -47,7 +47,7 @@ def save_session_files(profile_id: str):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
   # zip tmp folder 
-  zip_file_name = "sessionfiles_" + profile_id + ".zip"
+  zip_file_name = "sessionfiles_" + social_username + '_' + profile_id + ".zip"
   zip_file_path = cwd.joinpath(zip_file_name)
   subprocess.run("zip -r " + zip_file_path.__str__() + " tmp/", cwd=cwd.__str__(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
@@ -70,14 +70,14 @@ def file_exist_in_storage(bucket_name: str, file_key: str):
         # Something else went wrong
        raise e
 
-def unpack_session_files_to_machine(profile_id: str):
+def unpack_session_files_to_machine(profile_id: str, social_username: str):
   cwd = Path("~/.gramaddict").expanduser()
   if not cwd.exists():
     cwd.mkdir()
 
   # download from storage 
   client = storage_client()
-  filename = "sessionfiles_" + profile_id + ".zip"
+  filename = "sessionfiles_" + social_username + '_' + profile_id + ".zip"
   tmp_path = cwd.joinpath("tmp")
   if not tmp_path.exists():
     tmp_path.mkdir()
@@ -133,8 +133,8 @@ def login(ig_username: str):
 
   connected = check_adb_connection()
 
-  print('app id is ', configs.args.app_id)
-  device = create_device(configs.device_id, configs.args.app_id)
+  print('app id is ', configs.config.get('app-id'))
+  device = create_device(configs.device_id, configs.config.get('app-id'))
 
   open_instagram(device);
 
@@ -144,12 +144,16 @@ def login(ig_username: str):
   if not login_button.exists(Timeout.SHORT):
     print('user has already logged in')
     return True
+  username = configs.config.get('username')
+  password = configs.config.get('password')
+  if not username or not password:
+    raise Exception("Username or password not found in config file")
   
   username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
-  username_field.set_text(configs.args.username, mode=Mode.TYPE)
+  username_field.set_text(username, mode=Mode.TYPE)
 
   password_field = device.find(className='android.widget.EditText', enabled=True, instance=1)
-  password_field.set_text(configs.args.password, mode=Mode.TYPE)
+  password_field.set_text(password, mode=Mode.TYPE)
 
   # click on log in button 
   login_button.click()
@@ -166,11 +170,11 @@ def login(ig_username: str):
 
 def init_ig_session(profile_id: str, social_username: str):
   
-  has_unpacked = unpack_session_files_to_machine(profile_id)
+  has_unpacked = unpack_session_files_to_machine(profile_id, social_username)
   if not has_unpacked:
     # need to login an upload session file
     if login(social_username):
-      save_session_files(profile_id)
+      save_session_files(profile_id, social_username)
 
 
 if __name__ == "__main__":
