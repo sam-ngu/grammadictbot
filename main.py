@@ -51,7 +51,7 @@ def prepare_android_machine(social_username: str):
   igsession.init_ig_session(social_username)
 
 
-def send_logs(api_token, chat_id):
+def send_logs(api_token, chat_id, err_message = None):
   logs_path = Path("/home/androidusr/logs")
   # use telegram to send log file
   log_files = (
@@ -63,8 +63,11 @@ def send_logs(api_token, chat_id):
     response = requests.post(f"https://api.telegram.org/bot{api_token}/sendDocument", 
                              data={"chat_id": chat_id},
                              files={"document": log_file})
-  pass
+  if err_message:
+    response = requests.post(f"https://api.telegram.org/bot{api_token}/sendMessage", 
+                             data={"chat_id": chat_id, "text": err_message, 'parse_mode': 'markdown'})
 
+  
 
 def shutdown():
   # this will shutdown the docker container
@@ -106,7 +109,14 @@ def main():
     sys.argv.append("--config")
     sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
-  GramAddict.run()
+  try:
+    GramAddict.run()
+  except Exception as e:
+    print(e, flush=True)
+    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message='Error: ' + e.__str__())
+    shutdown()
+    return
+
   # save session before shutting down
   igsession.save_session_files(ig_username)
   print('session finished: saved ig session', flush=True)
