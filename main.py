@@ -63,7 +63,6 @@ def send_logs(api_token, chat_id):
     response = requests.post(f"https://api.telegram.org/bot{api_token}/sendDocument", 
                              data={"chat_id": chat_id},
                              files={"document": log_file})
-    print(response.json())
   pass
 
 
