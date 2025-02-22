@@ -6,6 +6,7 @@ import yaml
 from pathlib import Path
 from extra.igsession import session as igsession
 import GramAddict
+import requests
 
 def setup_grammadict_config(social_username: str, config_files: dict):
    # create new folder with account name
@@ -26,7 +27,7 @@ def setup_grammadict_config(social_username: str, config_files: dict):
         content = default_config_path.joinpath(file_name).read_text()
       f.write(content)
 
-def prepare_android_machine(profile_id: str, social_username: str):
+def prepare_android_machine(social_username: str):
   pipelines = (
     # 'adb start-server',
     # 'adb connect emulator-5554',
@@ -47,8 +48,25 @@ def prepare_android_machine(profile_id: str, social_username: str):
     stdout, stderr = process.communicate()
     print(stdout, stderr, flush=True)
 
-  igsession.init_ig_session(profile_id, social_username)
-  
+  igsession.init_ig_session(social_username)
+
+
+def send_logs(api_token, chat_id):
+  logs_path = Path("/home/androidusr/logs")
+  # use telegram to send log file
+  log_files = (
+    open(logs_path.joinpath('log_gramaddict.stderr.log').__str__(), 'rb'),
+    open(logs_path.joinpath('log_gramaddict.stdout.log').__str__(), 'rb'),
+  )
+
+  for log_file in log_files:
+    response = requests.post(f"https://api.telegram.org/bot{api_token}/sendDocument", 
+                             data={"chat_id": chat_id},
+                             files={"document": log_file})
+    print(response.json())
+  pass
+
+
 def shutdown():
   # this will shutdown the docker container
   subprocess.run('kill 1', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
@@ -58,6 +76,7 @@ def main():
   fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
 
   configyml = yaml.safe_load(fisherman_payload['config.yml'])
+  telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml', ''))
   ig_username = configyml['username']
   profile_id = fisherman_payload.get('profileId', '')
   print('igusername', ig_username, flush=True)
@@ -77,7 +96,7 @@ def main():
     'pm_list.txt': fisherman_payload.get('pm_list.txt', ''),
   })
 
-  prepare_android_machine(profile_id, ig_username)
+  prepare_android_machine(ig_username)
 
   # exec python run.py
   cwd = Path(__file__).parent
@@ -89,6 +108,13 @@ def main():
     sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
   GramAddict.run()
+  # save session before shutting down
+  igsession.save_session_files(ig_username)
+  print('session finished: saved ig session', flush=True)
+  # send logs to telegram or email
+  if telegramyml is not None or telegramyml != '':
+    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
+
   shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
@@ -108,4 +134,6 @@ if __name__ == "__main__":
   # cwd = Path(__file__).parent
   
   # GramAddict.run()
+
   main()
+  pass
