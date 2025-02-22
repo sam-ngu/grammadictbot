@@ -41,6 +41,14 @@ def telegram_bot_send_text(bot_api_token, bot_chat_ID, text):
         logger.error(f"Error sending Telegram message: {e}")
         return None
 
+def telegram_bot_send_file(bot_api_token, bot_chat_ID, file):
+    try: 
+        return requests.post(f"https://api.telegram.org/bot{bot_api_token}/sendDocument", 
+                             data={"chat_id": bot_chat_ID},
+                             files={"document": file}).json()
+    except Exception as e:
+        logger.error(f"Error sending Telegram file: {e}")
+        return None
 
 def _initialize_aggregated_data():
     return {

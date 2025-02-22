@@ -30,6 +30,7 @@ from GramAddict.core.log import get_log_file_config
 from GramAddict.core.report import print_full_report
 from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.storage import ACCOUNTS
+from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text, load_telegram_config
 
 http = urllib3.PoolManager()
 logger = logging.getLogger(__name__)
@@ -510,6 +511,24 @@ def save_crash(device):
         f"Crash saved as {crash_path}.zip",
         extra={"color": Fore.GREEN},
     )
+    # report this crash to telegram
+    telegram_config = load_telegram_config(configs.username)
+    if not telegram_config:
+        logger.error(
+            f"No telegram configuration found for {configs.username}. not reporting crash to telegram."
+        )
+    else:
+        with open(crash_path + ".zip", "rb") as crash_file:
+            telegram_bot_send_text(
+                telegram_config.get("telegram-api-token"),
+                telegram_config.get("telegram-chat-id"),
+                'fishing crashed, find crashing log below'
+            )
+            response = telegram_bot_send_file(
+                telegram_config.get("telegram-api-token"),
+                telegram_config.get("telegram-chat-id"),
+                file=crash_file,
+            )
     logger.info(
         "If you want to report this crash, please upload the dump file via a ticket in the #lobby channel on discord ",
         extra={"color": Fore.GREEN},
@@ -540,8 +559,11 @@ def trim_txt(source: str, target: str) -> None:
     with open(target, "w", encoding="utf-8") as f:
         f.writelines(rem)
 
+def shutdown():
+  # this will shutdown the docker container
+  subprocess.run('kill 1', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
-def stop_bot(device, sessions, session_state, was_sleeping=False):
+def stop_bot(device, sessions, session_state, was_sleeping=False, shutdown=False):
     close_instagram(device)
     if args.kill_atx_agent:
         kill_atx_agent(device)
@@ -555,6 +577,8 @@ def stop_bot(device, sessions, session_state, was_sleeping=False):
         if not was_sleeping:
             sessions.persist(directory=session_state.my_username)
     ask_for_a_donation()
+    if shutdown:
+        shutdown()
     sys.exit(2)
 
 

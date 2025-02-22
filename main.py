@@ -7,6 +7,8 @@ from pathlib import Path
 from extra.igsession import session as igsession
 import GramAddict
 import requests
+from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
+from GramAddict.core.utils import shutdown
 
 def setup_grammadict_config(social_username: str, config_files: dict):
    # create new folder with account name
@@ -60,18 +62,10 @@ def send_logs(api_token, chat_id, err_message = None):
   )
 
   for log_file in log_files:
-    response = requests.post(f"https://api.telegram.org/bot{api_token}/sendDocument", 
-                             data={"chat_id": chat_id},
-                             files={"document": log_file})
+    response = telegram_bot_send_file(api_token, chat_id, log_file)
+
   if err_message:
-    response = requests.post(f"https://api.telegram.org/bot{api_token}/sendMessage", 
-                             data={"chat_id": chat_id, "text": err_message, 'parse_mode': 'markdown'})
-
-  
-
-def shutdown():
-  # this will shutdown the docker container
-  subprocess.run('kill 1', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
+    response = telegram_bot_send_text(api_token, chat_id, err_message)
 
 
 def main():
