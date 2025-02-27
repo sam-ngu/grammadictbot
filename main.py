@@ -72,7 +72,7 @@ def main():
   fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
 
   configyml = yaml.safe_load(fisherman_payload['config.yml'])
-  telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml', ''))
+  telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml') or '')
   ig_username = configyml['username']
   profile_id = fisherman_payload.get('profileId', '')
   print('igusername', ig_username, flush=True)
