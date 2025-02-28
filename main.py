@@ -141,5 +141,18 @@ if __name__ == "__main__":
   
   # GramAddict.run()
 
+  
+  # import boto3
+  # client = boto3.client(service_name='s3', 
+  #                     aws_access_key_id='jxm3vkf2tr5dmya3r2473hhjbiyq', 
+  #                     aws_secret_access_key='j2z6r5fvomfwrjs6ush6t6tsev6l5bjxcxefhl2hhafsv5je5axv6',
+  #                     endpoint_url='https://gateway.storjshare.io')
+
+  # bucket_name = "grammadict-ig-sessions"
+  # file_key = "sessionfiles_sunnyrachel21.zip"
+  # # file_key = "sessionfiles_kellysfishh.zip"
+
+  # result = client.head_object(Bucket=bucket_name, Key=file_key)
+  # print(result)
   main()
   pass
