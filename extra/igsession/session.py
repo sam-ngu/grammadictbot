@@ -48,6 +48,7 @@ def save_session_files(social_username: str):
   ]
   
   if gramaddict_data_exist:
+    print('found gramaddict session, packaging...', flush=True)
     #  get user sessions.json, history_filters_users.json, interacted_users.json from gramaddict user folder 
     pipelines = pipelines + [
       "cp " + gramaddict_user_path.joinpath("sessions.json").__str__() + " " + tmp_path.__str__() + "/gramaddict_data",
@@ -204,4 +205,5 @@ if __name__ == "__main__":
   # print(os.environ['AWS_ACCESS_KEY_ID'])
   # save_session_files("12345678")
   # unpack_session_files_to_machine("12345678")
-  init_ig_session("kellysfishh")
+  # init_ig_session("kellysfishh")
+  pass

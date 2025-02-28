@@ -104,6 +104,8 @@ def main():
     sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
   try:
+    if telegramyml is not None or telegramyml != '':
+      telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
     GramAddict.run()
   except Exception as e:
     print(e, flush=True)
@@ -113,11 +115,12 @@ def main():
 
   # save session before shutting down
   igsession.save_session_files(ig_username)
-  print('session finished: saved ig session', flush=True)
+  print('session finished.', flush=True)
   # send logs to telegram or email
   if telegramyml is not None or telegramyml != '':
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
 
+  # TODO: uncomment this
   shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
