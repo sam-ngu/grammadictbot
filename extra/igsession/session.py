@@ -199,7 +199,8 @@ def init_ig_session(social_username: str):
     # need to login an upload session file
     if login(social_username):
       save_session_files(social_username)
-
+  else:
+    print('unpacked session files to machine', flush=True)
 
 if __name__ == "__main__":
   # print(os.environ['AWS_ACCESS_KEY_ID'])

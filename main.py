@@ -6,7 +6,7 @@ import yaml
 from pathlib import Path
 from extra.igsession import session as igsession
 import GramAddict
-import requests
+import traceback
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
 from GramAddict.core.utils import shutdown
 
@@ -109,7 +109,7 @@ def main():
     GramAddict.run()
   except Exception as e:
     print(e, flush=True)
-    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message='Error: ' + e.__str__())
+    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
     shutdown()
     return
 
