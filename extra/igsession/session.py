@@ -10,6 +10,8 @@ from GramAddict.core.utils import (check_adb_connection, open_instagram)
 from GramAddict.core.utils import load_config as load_utils
 from botocore.exceptions import ClientError
 import shutil
+from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
+
 
 load_dotenv()
 
@@ -187,6 +189,20 @@ def login(ig_username: str):
   # find the save button
   device.deviceV2.sleep(5)
   print('woke up continue')
+
+  #  check if got the send code verify email screen
+  verify_code = device.find(className='android.view.View', text="Confirm it's you")
+  if verify_code.exists(Timeout.MEDIUM):
+    telegram_config = load_telegram_config(ig_username)
+  
+    telegram_bot_send_text(
+      telegram_config.get("telegram-api-token"),
+      telegram_config.get("telegram-chat-id"),
+      "Please login to emulator and enter email verification code for instagram login in 10min: " + ig_username
+    )
+    # sleep for 10 min for user to take action to enter code 
+    device.deviceV2.sleep(60*10) 
+    
   save_profile_button = device.find(className='android.view.View', text="Save")
   if save_profile_button.exists(Timeout.MEDIUM):
     save_profile_button.click_retry(sleep=5, maxretry=3)
