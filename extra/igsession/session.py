@@ -10,6 +10,9 @@ from GramAddict.core.utils import (check_adb_connection, open_instagram)
 from GramAddict.core.utils import load_config as load_utils
 from botocore.exceptions import ClientError
 import shutil
+import yaml
+from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
+
 
 load_dotenv()
 
@@ -149,8 +152,17 @@ def unpack_session_files_to_machine(social_username: str):
 
   return True
 
+def load_config(ig_username: str, yaml_name: str = "config.yml"):
+  config_path = get_config_path(ig_username, yaml_name)
+  with open(config_path, "r", encoding="utf-8") as stream:
+    return yaml.safe_load(stream)
+
+def get_config_path(ig_username: str, yaml_name: str = "config.yml"):
+  return Path(__file__).parent.parent.parent.joinpath("accounts/" + ig_username + "/" + yaml_name)
+
 def login(ig_username: str):
-  config_path = Path(__file__).parent.parent.parent.joinpath("accounts/" + ig_username + "/config.yml")
+  # config_path = Path(__file__).parent.parent.parent.joinpath("accounts/" + ig_username + "/config.yml")
+  config_path = get_config_path(ig_username, 'config.yml')
   configs = Config(first_run=True, config=config_path.__str__())
   configs.load_plugins()
   configs.parse_args()
@@ -187,6 +199,26 @@ def login(ig_username: str):
   # find the save button
   device.deviceV2.sleep(5)
   print('woke up continue')
+
+  #  check if got the send code verify email screen
+  verify_code = device.find(className='android.view.View', text="Confirm it's you")
+  if verify_code.exists(Timeout.MEDIUM):
+    try:
+      telegram_config = load_config(ig_username, 'telegram.yml')
+    
+      telegram_bot_send_text(
+        telegram_config.get("telegram-api-token"),
+        telegram_config.get("telegram-chat-id"),
+        "Please login to emulator and enter email verification code for instagram login in 10min: " + ig_username
+      )
+      # sleep for 10 min for user to take action to enter code 
+      print("sleeping for 10min for user to take action to enter code", flush=True)
+      device.deviceV2.sleep(60*10) 
+    except Exception as e:
+      print(e, flush=True)
+      print('Unable to send telegram message', flush=True)
+      raise e;
+    
   save_profile_button = device.find(className='android.view.View', text="Save")
   if save_profile_button.exists(Timeout.MEDIUM):
     save_profile_button.click_retry(sleep=5, maxretry=3)
