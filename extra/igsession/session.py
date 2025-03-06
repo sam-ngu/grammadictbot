@@ -74,7 +74,7 @@ def save_session_files(social_username: str):
 
 def file_exist_in_storage(bucket_name: str, file_key: str):
   client = storage_client()
-  print("checking file exist in cloud, bucket: " + bucket_name + ' file_key: ' + file_key)
+  print("checking file exist in cloud, bucket: " + bucket_name + ' file_key: ' + file_key, flush=True)
   try:
     file_exist_in_storage = client.head_object(Bucket=bucket_name, Key=file_key)
     return True

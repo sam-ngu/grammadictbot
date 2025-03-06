@@ -50,6 +50,7 @@ from GramAddict.core.utils import (
 )
 from GramAddict.core.views import AccountView, ProfileView, TabBarView, UniversalActions
 from GramAddict.core.views import load_config as load_views
+from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
 
 
 def start_bot(**kwargs):
@@ -119,7 +120,21 @@ def start_bot(**kwargs):
             configs.args.working_hours, configs.args.time_delta_session
         )
         if not inside_working_hours:
-            wait_for_next_session(time_left, session_state, sessions, device)
+            logger.info(
+                "Outside working hours. shutting down."
+            )
+            telegram_config = load_telegram_config(configs.username)
+
+            if telegram_config:
+                telegram_bot_send_text(
+                    telegram_config.get("telegram-api-token"),
+                    telegram_config.get("telegram-chat-id"),
+                    configs.username + " outside working hours, shutting down."
+                )
+            # instead of waiting, we will stop the bot if it's outside working hours
+            return stop_bot(device, sessions, session_state, shutdown=True)
+            # wait_for_next_session(time_left, session_state, sessions, device)
+
         pre_post_script(path=configs.args.pre_script)
         if configs.args.restart_atx_agent:
             restart_atx_agent(device)
