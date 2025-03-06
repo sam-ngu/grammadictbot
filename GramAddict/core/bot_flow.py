@@ -47,6 +47,7 @@ from GramAddict.core.utils import (
     show_ending_conditions,
     stop_bot,
     wait_for_next_session,
+    shutdown
 )
 from GramAddict.core.views import AccountView, ProfileView, TabBarView, UniversalActions
 from GramAddict.core.views import load_config as load_views
@@ -132,7 +133,7 @@ def start_bot(**kwargs):
                     configs.username + " outside working hours, shutting down."
                 )
             # instead of waiting, we will stop the bot if it's outside working hours
-            return stop_bot(device, sessions, session_state, shutdown=True)
+            return stop_bot(device, sessions, session_state, shutdown=shutdown)
             # wait_for_next_session(time_left, session_state, sessions, device)
 
         pre_post_script(path=configs.args.pre_script)
