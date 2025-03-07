@@ -512,6 +512,8 @@ def save_crash(device):
         f"Crash saved as {crash_path}.zip",
         extra={"color": Fore.GREEN},
     )
+    # saving session as a checkpoint for the next run
+    igsession.save_session_files(configs.username) 
     # report this crash to telegram
     telegram_config = load_telegram_config(configs.username)
     if not telegram_config:
@@ -543,7 +545,6 @@ def save_crash(device):
             logger.error(
                 f"You can't use this feature without installing dependencies. Type that in console: 'pip3 install -U \"uiautomator2[image]\" -i https://pypi.doubanio.com/simple'. Exception: {e}"
             )
-    igsession.save_session_files(configs.username) 
 
 
 def trim_txt(source: str, target: str) -> None:
