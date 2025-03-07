@@ -31,6 +31,7 @@ from GramAddict.core.report import print_full_report
 from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.storage import ACCOUNTS
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text, load_telegram_config
+from extra.igsession import session as igsession
 
 http = urllib3.PoolManager()
 logger = logging.getLogger(__name__)
@@ -542,6 +543,7 @@ def save_crash(device):
             logger.error(
                 f"You can't use this feature without installing dependencies. Type that in console: 'pip3 install -U \"uiautomator2[image]\" -i https://pypi.doubanio.com/simple'. Exception: {e}"
             )
+    igsession.save_session_files(configs.username) 
 
 
 def trim_txt(source: str, target: str) -> None:
