@@ -111,7 +111,7 @@ def main():
     print(e, flush=True)
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
     # TODO: uncomment this
-    # shutdown()
+    shutdown()
     return
 
   # save session before shutting down
@@ -122,7 +122,7 @@ def main():
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
 
   # TODO: uncomment this
-  # shutdown()
+  shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
   # print('running ', cmd, flush=True)
