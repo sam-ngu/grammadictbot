@@ -857,17 +857,17 @@ def iterate_over_followers(
                         list_view.scroll(Direction.DOWN)
                 else:
                     logger.info("Need to scroll now", extra={"color": f"{Fore.GREEN}"})
-                    # scroll up offset to fully reveal the search bar if exist
-                    # device.swipe(direction=Direction.DOWN, scale=0.5)
-                    # check if at top, if yes scroll all the way to bottom, else continue
-                    # if scrolled_to_top():
-                    #     list_view.viewV2.fling.toEnd()
-                    # else:
-                    #     # resume offset
-                    #     device.swipe(direction=Direction.UP, scale=0.5)
 
-                    # list_view.scroll(Direction.DOWN)
-                    device.swipe(direction=Direction.UP, scale=0.9)
+                    list_view.scroll(Direction.DOWN)
+                    # scroll up offset to fully reveal the search bar if exist
+                    list_view.scroll(Direction.UP)
+                    # check if at top, if yes scroll all the way to bottom, else continue
+                    if scrolled_to_top():
+                        list_view.viewV2.fling.toEnd()
+                    else:
+                        # resume offset
+                        list_view.scroll(Direction.DOWN)
+                    # device.swipe(direction=Direction.UP, scale=0.9)
 
         else:
             logger.info(
