@@ -116,7 +116,7 @@ def start_bot(**kwargs):
     followers_now = None
     following_now = None
 
-    if os.environ['DEV_MODE'] == "True":
+    if os.environ.get('DEV_MODE') == "True":
         import playground
         playground.main(device)
         return
