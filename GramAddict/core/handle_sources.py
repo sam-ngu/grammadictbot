@@ -867,7 +867,7 @@ def iterate_over_followers(
                     #     device.swipe(direction=Direction.UP, scale=0.5)
 
                     # list_view.scroll(Direction.DOWN)
-                    device.swipe(direction=Direction.UP, scale=0.5)
+                    device.swipe(direction=Direction.UP, scale=0.9)
 
         else:
             logger.info(
