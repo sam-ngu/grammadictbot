@@ -110,7 +110,8 @@ def main():
   except Exception as e:
     print(e, flush=True)
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
-    shutdown()
+    # TODO: uncomment this
+    # shutdown()
     return
 
   # save session before shutting down
@@ -121,7 +122,7 @@ def main():
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
 
   # TODO: uncomment this
-  shutdown()
+  # shutdown()
 
   # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
   # print('running ', cmd, flush=True)
@@ -130,7 +131,10 @@ def main():
   # stdout, stderr = process.communicate()
   # print(stdout, stderr, flush=True)
 
-if __name__ == "__main__":
+
+def playground():
+  # To run dev mode, run this in terminal: DEV_MODE=True python3 main.py 
+
   # fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
 
   # configyml = yaml.safe_load(fisherman_payload['config.yml'])
@@ -138,8 +142,13 @@ if __name__ == "__main__":
 
   # # print(configyml, flush=True)
   # cwd = Path(__file__).parent
+
+  if not "--config" in sys.argv:
+    sys.argv.append("--config")
+    cwd = Path(__file__).parent
+    sys.argv.append(cwd.joinpath('accounts/' + 'kellysfishh' + '/config.yml').__str__())
   
-  # GramAddict.run()
+  GramAddict.run()
 
   
   # import boto3
@@ -154,5 +163,11 @@ if __name__ == "__main__":
 
   # result = client.head_object(Bucket=bucket_name, Key=file_key)
   # print(result)
+  pass
+
+if __name__ == "__main__":
+  
+  # playground()
+
   main()
   pass

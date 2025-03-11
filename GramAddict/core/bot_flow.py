@@ -2,6 +2,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 from time import sleep
+import os
 
 from colorama import Fore, Style
 
@@ -114,6 +115,11 @@ def start_bot(**kwargs):
     telegram_reports_at_end = False
     followers_now = None
     following_now = None
+
+    if os.environ['DEV_MODE'] == "True":
+        import playground
+        playground.main(device)
+        return
 
     while True:
         set_time_delta(configs.args)
