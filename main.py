@@ -107,6 +107,7 @@ def main():
     if telegramyml is not None or telegramyml != '':
       telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
     GramAddict.run()
+  # TODO: catch empty list exception and get the current influencer
   except Exception as e:
     print(e, flush=True)
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")

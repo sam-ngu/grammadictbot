@@ -13,7 +13,8 @@ from GramAddict.core.interaction import (
 from GramAddict.core.plugin_loader import Plugin
 from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.scroll_end_detector import ScrollEndDetector
-from GramAddict.core.utils import get_value, init_on_things, sample_sources
+from GramAddict.core.utils import get_value, init_on_things, sample_sources, EmptyList
+from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
 
 logger = logging.getLogger(__name__)
 
@@ -72,46 +73,23 @@ class InteractBloggerFollowers_Following(Plugin):
 
         # Start
         for source in sample_sources(sources, self.args.truncate_sources):
-            (
-                active_limits_reached,
-                _,
-                actions_limit_reached,
-            ) = self.session_state.check_limit(limit_type=self.session_state.Limit.ALL)
-            limit_reached = active_limits_reached or actions_limit_reached
+            try:
+                (
+                    active_limits_reached,
+                    _,
+                    actions_limit_reached,
+                ) = self.session_state.check_limit(limit_type=self.session_state.Limit.ALL)
+                limit_reached = active_limits_reached or actions_limit_reached
 
-            self.state = State()
-            is_myself = source[1:] == self.session_state.my_username
-            its_you = is_myself and " (it's you)" or ""
-            logger.info(
-                f"Handle {source} {its_you}", extra={"color": f"{Style.BRIGHT}"}
-            )
+                self.state = State()
+                is_myself = source[1:] == self.session_state.my_username
+                its_you = is_myself and " (it's you)" or ""
+                logger.info(
+                    f"Handle {source} {its_you}", extra={"color": f"{Style.BRIGHT}"}
+                )
 
-            # Init common things
-            (
-                on_interaction,
-                stories_percentage,
-                likes_percentage,
-                follow_percentage,
-                comment_percentage,
-                pm_percentage,
-                interact_percentage,
-            ) = init_on_things(source, self.args, self.sessions, self.session_state)
-
-            @run_safely(
-                device=device,
-                device_id=self.device_id,
-                sessions=self.sessions,
-                session_state=self.session_state,
-                screen_record=self.args.screen_record,
-                configs=configs,
-            )
-            def job():
-                self.handle_blogger(
-                    device,
-                    source,
-                    plugin,
-                    storage,
-                    profile_filter,
+                # Init common things
+                (
                     on_interaction,
                     stories_percentage,
                     likes_percentage,
@@ -119,18 +97,57 @@ class InteractBloggerFollowers_Following(Plugin):
                     comment_percentage,
                     pm_percentage,
                     interact_percentage,
-                )
-                self.state.is_job_completed = True
+                ) = init_on_things(source, self.args, self.sessions, self.session_state)
 
-            while not self.state.is_job_completed and not limit_reached:
-                job()
-
-            if limit_reached:
-                logger.info("Ending session.")
-                self.session_state.check_limit(
-                    limit_type=self.session_state.Limit.ALL, output=True
+                @run_safely(
+                    device=device,
+                    device_id=self.device_id,
+                    sessions=self.sessions,
+                    session_state=self.session_state,
+                    screen_record=self.args.screen_record,
+                    configs=configs,
                 )
-                break
+                def job():
+                    self.handle_blogger(
+                        device,
+                        source,
+                        plugin,
+                        storage,
+                        profile_filter,
+                        on_interaction,
+                        stories_percentage,
+                        likes_percentage,
+                        follow_percentage,
+                        comment_percentage,
+                        pm_percentage,
+                        interact_percentage,
+                    )
+                    self.state.is_job_completed = True
+
+                while not self.state.is_job_completed and not limit_reached:
+                    job()
+
+                if limit_reached:
+                    logger.info("Ending session.")
+                    self.session_state.check_limit(
+                        limit_type=self.session_state.Limit.ALL, output=True
+                    )
+                    break
+                pass
+            except EmptyList:
+                # if this happens it means the source was not found
+                telegram_config = load_telegram_config(configs.username)
+                if not telegram_config:
+                    logger.error(
+                        f"No telegram configuration found for {configs.username}. Source {source} not found/ is a private accounnt. Robot cannot continue."
+                    )
+                    continue
+                telegram_bot_send_text(
+                    telegram_config.get("telegram-api-token"),
+                    telegram_config.get("telegram-chat-id"),
+                    text=f"Source {source} not found/ is a private accounnt. Please check if it exists."
+                )
+                continue
 
     def handle_blogger(
         self,

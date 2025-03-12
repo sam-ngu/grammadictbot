@@ -217,7 +217,18 @@ def login(ig_username: str):
     except Exception as e:
       print(e, flush=True)
       print('Unable to send telegram message', flush=True)
-      raise e;
+      raise e
+    
+  # check if see suspect automated behaviour on account screen
+  is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
+  if is_suspect.exists(Timeout.MEDIUM):
+    telegram_bot_send_text(
+      telegram_config.get("telegram-api-token"),
+      telegram_config.get("telegram-chat-id"),
+      "Instagram has detected automated behavior on your account: " + ig_username + ". Please be careful on your botting behaviour."
+    )
+    dismiss_btn = device.find(className='android.view.View', text="Dismiss")
+    dismiss_btn.click()
     
   save_profile_button = device.find(className='android.view.View', text="Save")
   if save_profile_button.exists(Timeout.MEDIUM):
