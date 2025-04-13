@@ -11,3 +11,5 @@ requests~=2.32.3
 packaging~=20.9
 boto3==1.35.90
 python-dotenv==1.0.1
+pyopenssl==25.0.0
+cryptography==44.0.2 

@@ -31,15 +31,12 @@ def setup_grammadict_config(social_username: str, config_files: dict):
 
 def prepare_android_machine(social_username: str):
   pipelines = (
-    # 'adb start-server',
-    # 'adb connect emulator-5554',
-    # 'adb -s emulator-5554 wait-for-device',
     "adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; input keyevent 82'", # this will wait till emulator is ready
-    # 'adb kill-server',
-    # 'adb connect emulator-5554',
-    # 'adb -s emulator-5554 wait-for-device',
-    'adb install /home/androidusr/instagram.apk',
-    'python3 -m uiautomator2 init'
+
+
+    # these 2 should already be included in Digital Ocean snapshot
+    # 'adb install /home/androidusr/instagram.apk',
+    # 'python3 -m uiautomator2 init'
   )
 
   for cmd in pipelines:
@@ -50,7 +47,6 @@ def prepare_android_machine(social_username: str):
     stdout, stderr = process.communicate()
     print(stdout, stderr, flush=True)
 
-  igsession.init_ig_session(social_username)
 
 
 def send_logs(api_token, chat_id, err_message = None):
@@ -69,7 +65,13 @@ def send_logs(api_token, chat_id, err_message = None):
 
 
 def main():
-  fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
+  fisherman = os.environ['SCHED_FISHERMAN_PAYLOAD']
+
+  if not fisherman:
+    print('fisherman payload not found', flush=True)
+    return
+
+  fisherman_payload = json.loads(fisherman)
 
   configyml = yaml.safe_load(fisherman_payload['config.yml'])
   telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml') or '')
@@ -94,6 +96,12 @@ def main():
 
   prepare_android_machine(ig_username)
 
+  igsession.init_ig_session(ig_username)
+
+  if "--login-only" in sys.argv:
+    shutdown()
+    return
+
   # exec python run.py
   cwd = Path(__file__).parent
   print('running grammadict', flush=True)
@@ -106,8 +114,8 @@ def main():
   try:
     if telegramyml is not None or telegramyml != '':
       telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
+
     GramAddict.run()
-  # TODO: catch empty list exception and get the current influencer
   except Exception as e:
     print(e, flush=True)
     send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
@@ -124,13 +132,6 @@ def main():
 
   # TODO: uncomment this
   shutdown()
-
-  # cmd = "/home/androidusr/miniconda3/bin/python " + cwd.joinpath('run.py').__str__() + " --config " + cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__()
-  # print('running ', cmd, flush=True)
-  # process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-  # process.wait()
-  # stdout, stderr = process.communicate()
-  # print(stdout, stderr, flush=True)
 
 
 def playground():
@@ -169,6 +170,7 @@ def playground():
 if __name__ == "__main__":
   
   # playground()
+  # igsession.init_ig_session("oliviastorm.2000")
 
   main()
   pass

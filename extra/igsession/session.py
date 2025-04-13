@@ -181,6 +181,58 @@ def login(ig_username: str):
   if not login_button.exists(Timeout.SHORT):
     print('user has already logged in')
     return True
+
+  # should wait for 10 min for user to login. Timeout and shutdown if fail to login
+  timeout = 60 * 10  # 10 min
+  while login_button.exists(Timeout.SHORT):
+    print('waiting for user to login', flush=True)
+    device.deviceV2.sleep(5)
+    timeout -= 5
+    if timeout <= 0:
+      print('timed out waiting for user to login', flush=True)
+      return False
+    
+  print('user logged in', flush=True)
+  device.deviceV2.sleep(5)
+
+  # may see code verify screen
+  #  check if got the send code verify email screen
+  verify_code = device.find(className='android.view.View', text="Confirm it's you")
+
+  enter_code = device.find(className='android.view.View', text="Enter confirmation code")
+
+  timeout = 60 * 10  # 10 min
+  while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
+    print('waiting for user to enter code', flush=True)
+    device.deviceV2.sleep(5)
+    timeout -= 5
+    if timeout <= 0:
+      print('timed out waiting for user to enter verification code')
+      return False
+
+  print('user entered verification code', flush=True)
+  
+  # may see suspect screen
+  # check if see suspect automated behaviour on account screen
+  device.deviceV2.sleep(5)
+  is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
+  timeout = 60 * 2  # 2 min
+  while is_suspect.exists(Timeout.MEDIUM):
+    print('waiting for user to dismiss suspect screen', flush=True)
+    device.deviceV2.sleep(5)
+    timeout -= 5
+    if timeout <= 0:
+      dismiss_btn = device.find(className='android.view.View', text="Dismiss")
+      dismiss_btn.click()
+      break
+
+  # may see save profile button
+  save_profile_button = device.find(className='android.view.View', text="Save")
+  if save_profile_button.exists(Timeout.MEDIUM):
+    save_profile_button.click_retry(sleep=5, maxretry=3)
+
+  return True
+
   username = configs.config.get('username')
   password = configs.config.get('password')
   if not username or not password:
@@ -199,40 +251,6 @@ def login(ig_username: str):
   # find the save button
   device.deviceV2.sleep(5)
   print('woke up continue')
-
-  #  check if got the send code verify email screen
-  verify_code = device.find(className='android.view.View', text="Confirm it's you")
-  if verify_code.exists(Timeout.MEDIUM):
-    try:
-      telegram_config = load_config(ig_username, 'telegram.yml')
-    
-      telegram_bot_send_text(
-        telegram_config.get("telegram-api-token"),
-        telegram_config.get("telegram-chat-id"),
-        "Please login to emulator and enter email verification code for instagram login in 10min: " + ig_username
-      )
-      # sleep for 10 min for user to take action to enter code 
-      print("sleeping for 10min for user to take action to enter code", flush=True)
-      device.deviceV2.sleep(60*10) 
-    except Exception as e:
-      print(e, flush=True)
-      print('Unable to send telegram message', flush=True)
-      raise e
-    
-  # check if see suspect automated behaviour on account screen
-  is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
-  if is_suspect.exists(Timeout.MEDIUM):
-    telegram_bot_send_text(
-      telegram_config.get("telegram-api-token"),
-      telegram_config.get("telegram-chat-id"),
-      "Instagram has detected automated behavior on your account: " + ig_username + ". Please be careful on your botting behaviour."
-    )
-    dismiss_btn = device.find(className='android.view.View', text="Dismiss")
-    dismiss_btn.click()
-    
-  save_profile_button = device.find(className='android.view.View', text="Save")
-  if save_profile_button.exists(Timeout.MEDIUM):
-    save_profile_button.click_retry(sleep=5, maxretry=3)
 
   return True
 
