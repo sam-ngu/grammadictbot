@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import yaml
+import requests
 from pathlib import Path
 from extra.igsession import session as igsession
 import GramAddict
@@ -76,7 +77,6 @@ def main():
   configyml = yaml.safe_load(fisherman_payload['config.yml'])
   telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml') or '')
   ig_username = configyml['username']
-  profile_id = fisherman_payload.get('profileId', '')
   print('igusername', ig_username, flush=True)
 
   # payload is an object that contains the text content of the file eg:
@@ -98,7 +98,20 @@ def main():
 
   igsession.init_ig_session(ig_username)
 
-  if "--login-only" in sys.argv:
+  login_only = os.environ['GRAMADDICT_MODE'] == 'login'
+  if login_only:
+    #  TODO: send request to fg to let it know login was successful
+    payload = {
+      'ig_username': ig_username,
+      'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
+      'type': 'ig.loggedin',
+    }
+    res = requests.post(fisherman_payload['fisherman_url'], 
+                        headers={
+                          'Content-Type': 'application/json',
+                          'fg-signature': os.environ['FG_NONCE'],
+                        }, 
+                        json={'ig_username': ig_username, 'status': 'success'})
     shutdown()
     return
 

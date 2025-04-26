@@ -201,7 +201,7 @@ def login(ig_username: str):
 
   enter_code = device.find(className='android.view.View', text="Enter confirmation code")
 
-  timeout = 60 * 10  # 10 min
+  timeout = 60 * 5  # 5 min
   while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
     print('waiting for user to enter code', flush=True)
     device.deviceV2.sleep(5)
