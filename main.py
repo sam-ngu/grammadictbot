@@ -30,14 +30,15 @@ def setup_grammadict_config(social_username: str, config_files: dict):
         content = default_config_path.joinpath(file_name).read_text()
       f.write(content)
 
-def prepare_android_machine(social_username: str):
+def prepare_android_machine():
   pipelines = (
     "adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; input keyevent 82'", # this will wait till emulator is ready
 
 
     # these 2 should already be included in Digital Ocean snapshot
-    # 'adb install /home/androidusr/instagram.apk',
-    # 'python3 -m uiautomator2 init'
+    # TODO: add these 2 to local only
+    'adb install /home/androidusr/instagram.apk',
+    'python3 -m uiautomator2 init'
   )
 
   for cmd in pipelines:
@@ -94,24 +95,24 @@ def main():
     'pm_list.txt': fisherman_payload.get('pm_list.txt', ''),
   })
 
-  prepare_android_machine(ig_username)
+  prepare_android_machine()
 
   igsession.init_ig_session(ig_username)
 
   login_only = os.environ['GRAMADDICT_MODE'] == 'login'
   if login_only:
-    #  TODO: send request to fg to let it know login was successful
     payload = {
-      'ig_username': ig_username,
+      'social_username': ig_username,
       'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
-      'type': 'ig.loggedin',
+      'type': 'loggedin',
+      'social_platform': 'instagram',
     }
-    res = requests.post(fisherman_payload['fisherman_url'], 
+    res = requests.post(os.environ['FG_WEBHOOK_URL'], 
                         headers={
                           'Content-Type': 'application/json',
                           'fg-signature': os.environ['FG_NONCE'],
                         }, 
-                        json={'ig_username': ig_username, 'status': 'success'})
+                        json=payload)
     shutdown()
     return
 
