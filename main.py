@@ -10,6 +10,7 @@ import GramAddict
 import traceback
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
 from GramAddict.core.utils import shutdown
+from GramAddict.core.webhook import send_webhook
 
 def setup_grammadict_config(social_username: str, config_files: dict):
    # create new folder with account name
@@ -37,8 +38,8 @@ def prepare_android_machine():
 
     # these 2 should already be included in Digital Ocean snapshot
     # TODO: add these 2 to local only
-    'adb install /home/androidusr/instagram.apk',
-    'python3 -m uiautomator2 init'
+    # 'adb install /home/androidusr/instagram.apk',
+    # 'python3 -m uiautomator2 init'
   )
 
   for cmd in pipelines:
@@ -97,22 +98,17 @@ def main():
 
   prepare_android_machine()
 
+  login_only = os.environ['GRAMADDICT_MODE'] == 'login'
+
   igsession.init_ig_session(ig_username)
 
-  login_only = os.environ['GRAMADDICT_MODE'] == 'login'
   if login_only:
-    payload = {
+    res = send_webhook({
       'social_username': ig_username,
       'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
       'type': 'loggedin',
       'social_platform': 'instagram',
-    }
-    res = requests.post(os.environ['FG_WEBHOOK_URL'], 
-                        headers={
-                          'Content-Type': 'application/json',
-                          'fg-signature': os.environ['FG_NONCE'],
-                        }, 
-                        json=payload)
+    })
     shutdown()
     return
 

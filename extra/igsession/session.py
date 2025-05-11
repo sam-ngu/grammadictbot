@@ -12,7 +12,7 @@ from botocore.exceptions import ClientError
 import shutil
 import yaml
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
-
+from GramAddict.core.webhook import send_webhook
 
 load_dotenv()
 
@@ -171,16 +171,27 @@ def login(ig_username: str):
   connected = check_adb_connection()
 
   print('app id is ', configs.config.get('app-id'))
-  device = create_device(configs.device_id, configs.config.get('app-id'))
+  app_id = configs.config.get('app-id') if configs.config.get('app-id') else 'com.instagram.android'
+  device = create_device(configs.device_id, app_id)
 
-  open_instagram(device);
+  open_instagram(device)
 
   # find login button, if does not exist then user has already logged in 
   login_button = device.find(className='android.view.View', text="Log in")
-
+  device.deviceV2.sleep(3)
   if not login_button.exists(Timeout.SHORT):
-    print('user has already logged in')
+    print('user has already logged in', flush=True)
     return True
+
+  username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
+  username_field.set_text(ig_username, mode=Mode.TYPE)
+
+  res = send_webhook({
+    'type': 'loginready',
+    'social_username': ig_username,
+    'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
+    'social_platform': 'instagram',
+  })
 
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
