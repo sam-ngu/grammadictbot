@@ -100,14 +100,15 @@ def main():
 
   login_only = os.environ['GRAMADDICT_MODE'] == 'login'
 
-  igsession.init_ig_session(ig_username)
+  result = igsession.init_ig_session(ig_username)
 
   if login_only:
     res = send_webhook({
       'social_username': ig_username,
       'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
-      'type': 'loggedin',
+      'event': 'loggedin' if result == 'loggedin' else 'failed',
       'social_platform': 'instagram',
+      'payload': {'message': result}
     })
     shutdown()
     return

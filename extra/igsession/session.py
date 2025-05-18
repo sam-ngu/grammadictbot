@@ -181,13 +181,13 @@ def login(ig_username: str):
   device.deviceV2.sleep(3)
   if not login_button.exists(Timeout.SHORT):
     print('user has already logged in', flush=True)
-    return True
+    return 'already_logged_in'
 
   username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
   username_field.set_text(ig_username, mode=Mode.TYPE)
 
   res = send_webhook({
-    'type': 'loginready',
+    'event': 'loginready',
     'social_username': ig_username,
     'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
     'social_platform': 'instagram',
@@ -197,14 +197,14 @@ def login(ig_username: str):
   timeout = 60 * 10  # 10 min
   while login_button.exists(Timeout.SHORT):
     print('waiting for user to login', flush=True)
-    device.deviceV2.sleep(5)
-    timeout -= 5
+    device.deviceV2.sleep(1)
+    timeout -= 1
     if timeout <= 0:
       print('timed out waiting for user to login', flush=True)
-      return False
+      return 'timeout'
     
   print('user logged in', flush=True)
-  device.deviceV2.sleep(5)
+  device.deviceV2.sleep(1)
 
   # may see code verify screen
   #  check if got the send code verify email screen
@@ -215,23 +215,23 @@ def login(ig_username: str):
   timeout = 60 * 5  # 5 min
   while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
     print('waiting for user to enter code', flush=True)
-    device.deviceV2.sleep(5)
-    timeout -= 5
+    device.deviceV2.sleep(1)
+    timeout -= 1
     if timeout <= 0:
       print('timed out waiting for user to enter verification code')
-      return False
+      return 'timeout'
 
-  print('user entered verification code', flush=True)
+  print('passed verification code', flush=True)
   
   # may see suspect screen
   # check if see suspect automated behaviour on account screen
-  device.deviceV2.sleep(5)
+  device.deviceV2.sleep(1)
   is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
   timeout = 60 * 2  # 2 min
   while is_suspect.exists(Timeout.MEDIUM):
     print('waiting for user to dismiss suspect screen', flush=True)
-    device.deviceV2.sleep(5)
-    timeout -= 5
+    device.deviceV2.sleep(1)
+    timeout -= 1
     if timeout <= 0:
       dismiss_btn = device.find(className='android.view.View', text="Dismiss")
       dismiss_btn.click()
@@ -242,7 +242,7 @@ def login(ig_username: str):
   if save_profile_button.exists(Timeout.MEDIUM):
     save_profile_button.click_retry(sleep=5, maxretry=3)
 
-  return True
+  return 'loggedin'
 
   username = configs.config.get('username')
   password = configs.config.get('password')
@@ -270,8 +270,11 @@ def init_ig_session(social_username: str):
   has_unpacked = unpack_session_files_to_machine(social_username)
   if not has_unpacked:
     # need to login an upload session file
-    if login(social_username):
+    result = login(social_username)
+    if result == 'already_logged_in' or result == 'loggedin':
+      print('Saving session files after logged in', flush=True)
       save_session_files(social_username)
+    return result  
   else:
     print('unpacked session files to machine', flush=True)
 
