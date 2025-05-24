@@ -11,6 +11,8 @@ import traceback
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
+from dotenv import load_dotenv
+load_dotenv()
 
 def setup_grammadict_config(social_username: str, config_files: dict):
    # create new folder with account name
