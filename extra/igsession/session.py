@@ -64,7 +64,7 @@ def save_session_files(social_username: str):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
   # zip tmp folder 
-  zip_file_name = "sessionfiles_" + social_username + ".zip"
+  zip_file_name = _zip_file_name(social_username)
   zip_file_path = cwd.joinpath(zip_file_name)
   subprocess.run("zip -r " + zip_file_path.__str__() + " tmp/", cwd=cwd.__str__(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
@@ -88,6 +88,9 @@ def file_exist_in_storage(bucket_name: str, file_key: str):
         # Something else went wrong
        raise e
 
+def _zip_file_name(social_username: str):
+  return "sessionfiles_" + social_username + "_" + os.environ['FG_SOCIAL_ACCOUNT_ID'] + ".zip"
+
 def unpack_session_files_to_machine(social_username: str):
   cwd = Path("~/.gramaddict").expanduser()
   if not cwd.exists():
@@ -95,7 +98,7 @@ def unpack_session_files_to_machine(social_username: str):
 
   # download from storage 
   client = storage_client()
-  filename = "sessionfiles_" + social_username + ".zip"
+  filename = _zip_file_name(social_username)
   tmp_path = cwd.joinpath("tmp")
   if not tmp_path.exists():
     tmp_path.mkdir()
