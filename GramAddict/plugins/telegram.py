@@ -130,6 +130,18 @@ def generate_report(
     followers_now,
     following_now,
 ):
+    # TODO: return dictionary instead
+    # TODO: standardise the analytics 
+
+    # current follower count
+    # duration of bot
+    # total likes
+    # total follows
+    # total unfollows
+    # total stories watched
+    # total comments
+    # total PM
+
     return f"""
             *Stats for {username}*:
 

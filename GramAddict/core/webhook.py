@@ -1,5 +1,6 @@
 import requests
 import os
+from extra.utils.app_state import AppState
 
 def _get_last_n_lines(filepath, n=20):
     """
@@ -28,9 +29,15 @@ def send_webhook(payload: dict):
       'fisher_stdout': ''.join(_get_last_n_lines('/home/androidusr/logs/log_gramaddict.stdout.log')),
       'fisher_stderr': ''.join(_get_last_n_lines('/home/androidusr/logs/log_gramaddict.stderr.log')),
     }
-    
-    payload.update({'logs': logs})
-    res = requests.post(os.environ['FG_WEBHOOK_URL'], 
+    ig_username = AppState.configyml['username']
+    payload.update({
+      'logs': logs,
+      'social_platform': 'instagram',
+      'social_username': ig_username,
+      'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
+    })
+
+    return requests.post(os.environ['FG_WEBHOOK_URL'], 
                   headers={
                     'Content-Type': 'application/json',
                     'fg-signature': os.environ['FG_NONCE'],

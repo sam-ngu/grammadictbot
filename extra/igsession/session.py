@@ -191,9 +191,6 @@ def login(ig_username: str):
 
   res = send_webhook({
     'event': 'loginready',
-    'social_username': ig_username,
-    'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
-    'social_platform': 'instagram',
   })
 
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
@@ -231,7 +228,7 @@ def login(ig_username: str):
   device.deviceV2.sleep(1)
   is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
   timeout = 60 * 2  # 2 min
-  while is_suspect.exists(Timeout.MEDIUM):
+  while is_suspect.exists(Timeout.SHORT):
     print('waiting for user to dismiss suspect screen', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
@@ -242,7 +239,7 @@ def login(ig_username: str):
 
   # may see save profile button
   save_profile_button = device.find(className='android.view.View', text="Save")
-  if save_profile_button.exists(Timeout.MEDIUM):
+  if save_profile_button.exists(Timeout.SHORT):
     save_profile_button.click_retry(sleep=5, maxretry=3)
 
   return 'loggedin'

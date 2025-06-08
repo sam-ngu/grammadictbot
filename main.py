@@ -11,6 +11,9 @@ import traceback
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
+from extra.utils.app_state import AppState
+from extra.utils.webhook_report import WebhookReports
+import signal
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -68,8 +71,18 @@ def send_logs(api_token, chat_id, err_message = None):
   if err_message:
     response = telegram_bot_send_text(api_token, chat_id, err_message)
 
+def graceful_shutdown():
+  print('sending analytics to webhook', flush=True)
+
+  WebhookReports().run()
+  # response = send_webhook(analytics)
 
 def main():
+
+  # TODO: graceful shutdown hook:
+  signal.signal(signal.SIGTERM, graceful_shutdown)
+  # send webhook on session analytics
+
   fisherman = os.environ['SCHED_FISHERMAN_PAYLOAD']
 
   if not fisherman:
@@ -79,6 +92,7 @@ def main():
   fisherman_payload = json.loads(fisherman)
 
   configyml = yaml.safe_load(fisherman_payload['config.yml'])
+  AppState(configyml)
   telegramyml = yaml.safe_load(fisherman_payload.get('telegram.yml') or '')
   ig_username = configyml['username']
   print('igusername', ig_username, flush=True)
@@ -106,10 +120,7 @@ def main():
 
   if login_only:
     res = send_webhook({
-      'social_username': ig_username,
-      'social_account_id': os.environ['FG_SOCIAL_ACCOUNT_ID'],
       'event': 'loggedin' if result == 'loggedin' else 'failed',
-      'social_platform': 'instagram',
       'payload': {'message': result}
     })
     shutdown()
@@ -125,13 +136,14 @@ def main():
     sys.argv.append(cwd.joinpath('accounts/' + ig_username + '/config.yml').__str__())
 
   try:
-    if telegramyml is not None or telegramyml != '':
-      telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
+    # if telegramyml is not None or telegramyml != '':
+    #   telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
 
     GramAddict.run()
   except Exception as e:
-    print(e, flush=True)
-    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
+    print('exception: ', e, flush=True)
+    # TODO: report to sentry 
+    # send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
     # TODO: uncomment this
     shutdown()
     return
@@ -140,8 +152,10 @@ def main():
   igsession.save_session_files(ig_username)
   print('session finished.', flush=True)
   # send logs to telegram or email
-  if telegramyml is not None or telegramyml != '':
-    send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
+  # TODO: send finish event to webhook
+
+  # if telegramyml is not None or telegramyml != '':
+  #   send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
 
   # TODO: uncomment this
   shutdown()
@@ -181,9 +195,6 @@ def playground():
   pass
 
 if __name__ == "__main__":
-  
-  # playground()
-  # igsession.init_ig_session("oliviastorm.2000")
 
   main()
   pass

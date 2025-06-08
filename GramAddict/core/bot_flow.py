@@ -53,7 +53,8 @@ from GramAddict.core.utils import (
 from GramAddict.core.views import AccountView, ProfileView, TabBarView, UniversalActions
 from GramAddict.core.views import load_config as load_views
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
-
+from extra.utils.webhook_report import WebhookReports
+from extra.utils.app_state import AppState
 
 def start_bot(**kwargs):
     # Logging initialization
@@ -221,6 +222,7 @@ def start_bot(**kwargs):
                 session_state.my_followers_count,
                 session_state.my_following_count,
             ) = profile_view.getProfileInfo()
+            AppState.session_state = session_state
         except Exception as e:
             logger.error(f"Exception: {e}")
             save_crash(device)
@@ -359,18 +361,21 @@ def start_bot(**kwargs):
         sessions.persist(directory=session_state.my_username)
 
         # print reports
-        if telegram_reports_at_end:
-            logger.info("Going back to your profile..")
+        logger.info("Session finished. Going back to your profile to get stats..")
+        profile_view.click_on_avatar()
+        if profile_view.getFollowingCount() is None:
             profile_view.click_on_avatar()
-            if profile_view.getFollowingCount() is None:
-                profile_view.click_on_avatar()
-            account_view.refresh_account()
-            (
-                _,
-                _,
-                followers_now,
-                following_now,
-            ) = profile_view.getProfileInfo()
+        account_view.refresh_account()
+        (
+            _,
+            _,
+            followers_now,
+            following_now,
+        ) = profile_view.getProfileInfo()
+        AppState.session_state.my_followers_count = followers_now
+        AppState.session_state.my_following_count = following_now
+        logger.debug('running webhook reports...')
+        WebhookReports.run()
 
         if analytics_at_end:
             configs.actions["analytics"].run(

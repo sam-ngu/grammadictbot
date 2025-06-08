@@ -15,7 +15,7 @@ from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.scroll_end_detector import ScrollEndDetector
 from GramAddict.core.utils import get_value, init_on_things, sample_sources, EmptyList
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
-
+from GramAddict.core.webhook import send_webhook
 logger = logging.getLogger(__name__)
 
 
@@ -108,21 +108,34 @@ class InteractBloggerFollowers_Following(Plugin):
                     configs=configs,
                 )
                 def job():
-                    self.handle_blogger(
-                        device,
-                        source,
-                        plugin,
-                        storage,
-                        profile_filter,
-                        on_interaction,
-                        stories_percentage,
-                        likes_percentage,
-                        follow_percentage,
-                        comment_percentage,
-                        pm_percentage,
-                        interact_percentage,
-                    )
-                    self.state.is_job_completed = True
+                    try: 
+                        self.handle_blogger(
+                            device,
+                            source,
+                            plugin,
+                            storage,
+                            profile_filter,
+                            on_interaction,
+                            stories_percentage,
+                            likes_percentage,
+                            follow_percentage,
+                            comment_percentage,
+                            pm_percentage,
+                            interact_percentage,
+                        )
+                        self.state.is_job_completed = True
+                    except EmptyList:
+                        send_webhook({
+                            'event': 'invalid_influencer',
+                            'payload': {
+                                'influencer_name': source
+                            }
+                        })
+                        logger.error(
+                            f"No telegram configuration found for {configs.username}. Source {source} not found/ is a private accounnt. Robot cannot continue."
+                        )
+                        self.state.is_job_completed = True
+                        
 
                 while not self.state.is_job_completed and not limit_reached:
                     job()
@@ -135,6 +148,12 @@ class InteractBloggerFollowers_Following(Plugin):
                     break
                 pass
             except EmptyList:
+                send_webhook({
+                    'event': 'invalid_influencer',
+                    'payload': {
+                        'influencer_name': source
+                    }
+                })
                 # if this happens it means the source was not found
                 telegram_config = load_telegram_config(configs.username)
                 if not telegram_config:
