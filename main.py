@@ -14,13 +14,19 @@ from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports
 import signal
+import logging
+from datetime import datetime
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
+
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+logger = logging.getLogger(__name__)
+logger.info("----------- session " + current_time + " -----------")
+logger.error("----------- session " + current_time + " -----------")
+
 
 def setup_grammadict_config(social_username: str, config_files: dict):
-   # create new folder with account name
-  # with the following files in the accounts folder from the json payload:
-  # config.yml
+   # config.yml
   # telegram.yml
   # filters.yml
   # whitelist.txt
@@ -75,12 +81,10 @@ def graceful_shutdown():
   print('sending analytics to webhook', flush=True)
 
   WebhookReports().run()
-  # response = send_webhook(analytics)
+  shutdown()
 
 def main():
 
-  # TODO: graceful shutdown hook:
-  signal.signal(signal.SIGTERM, graceful_shutdown)
   # send webhook on session analytics
 
   fisherman = os.environ['SCHED_FISHERMAN_PAYLOAD']
@@ -179,22 +183,11 @@ def playground():
   
   GramAddict.run()
 
-  
-  # import boto3
-  # client = boto3.client(service_name='s3', 
-  #                     aws_access_key_id='jxm3vkf2tr5dmya3r2473hhjbiyq', 
-  #                     aws_secret_access_key='j2z6r5fvomfwrjs6ush6t6tsev6l5bjxcxefhl2hhafsv5je5axv6',
-  #                     endpoint_url='https://gateway.storjshare.io')
-
-  # bucket_name = "grammadict-ig-sessions"
-  # file_key = "sessionfiles_sunnyrachel21.zip"
-  # # file_key = "sessionfiles_kellysfishh.zip"
-
-  # result = client.head_object(Bucket=bucket_name, Key=file_key)
-  # print(result)
   pass
 
 if __name__ == "__main__":
+  signal.signal(signal.SIGTERM, graceful_shutdown)
+  signal.signal(signal.SIGINT, graceful_shutdown)
+  signal.signal(signal.SIGKILL, graceful_shutdown)
 
   main()
-  pass

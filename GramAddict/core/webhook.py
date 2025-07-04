@@ -15,9 +15,11 @@ def _get_last_n_lines(filepath, n=20):
               Returns an empty list if the file is not found or empty.
     """
     try:
-      with open(filepath, 'r') as f:
-          lines = f.readlines()
-          return lines[-n:]
+      with open(filepath, 'rb') as f:
+        f.seek(0)
+        content_bype = f.read()
+        lines = content_bype.decode('utf-8').splitlines()
+        return lines[-n:]
     except FileNotFoundError:
       return []
     except Exception:

@@ -14,7 +14,7 @@ import yaml
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
 from GramAddict.core.webhook import send_webhook
 
-load_dotenv()
+load_dotenv(override=True)
 
 def storage_client():
     return boto3.client(service_name='s3', 
