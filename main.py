@@ -77,7 +77,7 @@ def send_logs(api_token, chat_id, err_message = None):
   if err_message:
     response = telegram_bot_send_text(api_token, chat_id, err_message)
 
-def graceful_shutdown():
+def graceful_shutdown(signum, frame):
   print('sending analytics to webhook', flush=True)
 
   WebhookReports().run()
@@ -188,6 +188,7 @@ def playground():
 if __name__ == "__main__":
   signal.signal(signal.SIGTERM, graceful_shutdown)
   signal.signal(signal.SIGINT, graceful_shutdown)
-  signal.signal(signal.SIGKILL, graceful_shutdown)
+  # signal cant handle SIGKILL, SIGKILL is not meant for gracefull shutdown
+  # signal.signal(signal.SIGKILL, graceful_shutdown)
 
   main()
