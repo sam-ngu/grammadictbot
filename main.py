@@ -43,15 +43,15 @@ def setup_grammadict_config(social_username: str, config_files: dict):
       f.write(content)
 
 def prepare_android_machine():
-  pipelines = (
-    "adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; input keyevent 82'", # this will wait till emulator is ready
-
-
-    # these 2 should already be included in Digital Ocean snapshot
-    # TODO: add these 2 to local only
-    # 'adb install /home/androidusr/instagram.apk',
-    # 'python3 -m uiautomator2 init'
-  )
+  pipelines = [
+    # this will wait till emulator is ready
+    "adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done; input keyevent 82'", 
+  ]
+  # these 2 should already be included in Digital Ocean snapshot
+  #  add these 2 to local only
+  if os.environ.get('APP_ENV') is not None and os.environ['APP_ENV'] != 'production':
+    pipelines.append('adb install /home/androidusr/instagram.apk')
+    pipelines.append('python3 -m uiautomator2 init')
 
   for cmd in pipelines:
     print('running ', cmd, flush=True)
@@ -79,7 +79,9 @@ def send_logs(api_token, chat_id, err_message = None):
 
 def graceful_shutdown(signum, frame):
   print('sending analytics to webhook', flush=True)
-
+  send_webhook({
+    "event": "testwebhook",
+  })
   WebhookReports().run()
   shutdown()
 
