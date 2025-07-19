@@ -66,8 +66,12 @@ class WebhookReports:
     def run():
         print('WebhookReports running....', flush=True)
         username = AppState.configyml.get("username")
-        followers_now = AppState.session_state.my_followers_count
-        following_now = AppState.session_state.my_following_count
+        session_state = AppState.session_state
+        if not session_state:
+            print("No session state found. Skipping report generation.", flush=True)
+            return
+        followers_now = session_state.my_followers_count
+        following_now = session_state.my_following_count
 
         if username is None:
             print("You have to specify a username for getting reports!")

@@ -78,7 +78,7 @@ def send_logs(api_token, chat_id, err_message = None):
     response = telegram_bot_send_text(api_token, chat_id, err_message)
 
 def graceful_shutdown(signum, frame):
-  print('sending analytics to webhook', flush=True)
+  print('attempting to send analytics to webhook', flush=True)
   send_webhook({
     "event": "testwebhook",
   })
