@@ -226,8 +226,9 @@ def login(ig_username: str):
 
   enter_code = device.find(className='android.view.View', text="Enter confirmation code")
 
+  # TODO this is not reliable, when testing live, the following got bypassed, change timeout to Medium? 
   timeout = 60 * 5  # 5 min
-  while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
+  while verify_code.exists(Timeout.MEDIUM) or enter_code.exists(Timeout.MEDIUM):
     print('waiting for user to enter code', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
@@ -242,7 +243,7 @@ def login(ig_username: str):
   device.deviceV2.sleep(1)
   is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
   timeout = 60 * 2  # 2 min
-  while is_suspect.exists(Timeout.SHORT):
+  while is_suspect.exists(Timeout.MEDIUM):
     print('waiting for user to dismiss suspect screen', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
@@ -253,7 +254,7 @@ def login(ig_username: str):
 
   # may see save profile button
   save_profile_button = device.find(className='android.view.View', text="Save")
-  if save_profile_button.exists(Timeout.SHORT):
+  if save_profile_button.exists(Timeout.MEDIUM):
     save_profile_button.click_retry(sleep=5, maxretry=3)
 
   return 'loggedin'

@@ -79,9 +79,9 @@ def send_logs(api_token, chat_id, err_message = None):
 
 def graceful_shutdown(signum, frame):
   print('attempting to send analytics to webhook', flush=True)
-  send_webhook({
-    "event": "testwebhook",
-  })
+  # send_webhook({
+  #   "event": "testwebhook",
+  # })
   WebhookReports().run()
   shutdown()
 
