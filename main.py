@@ -15,6 +15,7 @@ from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports
 import signal
 import logging
+from adbutils.errors import AdbError
 from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv(override=True)
@@ -122,14 +123,23 @@ def main():
 
   login_only = os.environ['GRAMADDICT_MODE'] == 'login'
 
-  result = igsession.init_ig_session(ig_username)
+  try:
+    result = igsession.init_ig_session(ig_username)
 
-  if login_only:
+    if login_only:
+      res = send_webhook({
+        'event': 'loggedin' if result == 'loggedin' else 'failed',
+        'payload': {'message': result}
+      })
+      shutdown()
+      return
+  except Exception as e:
+    # send crash event , should retry machine
     res = send_webhook({
-      'event': 'loggedin' if result == 'loggedin' else 'failed',
-      'payload': {'message': result}
+      'event': 'crashed',
+      'payload': e.__str__()
     })
-    shutdown()
+    print('exception: ', e, flush=True)
     return
 
   # exec python run.py
