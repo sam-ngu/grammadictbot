@@ -187,6 +187,7 @@ def login(ig_username: str):
     proceed_home_screen_button.click()
 
   # find login button, if does not exist then user has already logged in 
+  # TODO: use forgot password?
   login_button = device.find(className='android.view.View', text="Log in")
 
   current_app_info = device.deviceV2.app_current()
@@ -207,10 +208,12 @@ def login(ig_username: str):
     'event': 'loginready',
   })
 
+  # TODO: what if user entered wrong password??
+
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
+  print('checking if login button exists', flush=True)
   while login_button.exists(Timeout.SHORT):
-    print('waiting for user to login', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
     if timeout <= 0:
@@ -228,8 +231,8 @@ def login(ig_username: str):
 
   # TODO this is not reliable, when testing live, the following got bypassed, change timeout to Medium? 
   timeout = 60 * 5  # 5 min
+  print('checking if user need to enter 2FA code', flush=True)
   while verify_code.exists(Timeout.MEDIUM) or enter_code.exists(Timeout.MEDIUM):
-    print('waiting for user to enter code', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
     if timeout <= 0:
@@ -243,8 +246,8 @@ def login(ig_username: str):
   device.deviceV2.sleep(1)
   is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
   timeout = 60 * 2  # 2 min
+  print('checking for user to dismiss suspect screen', flush=True)
   while is_suspect.exists(Timeout.MEDIUM):
-    print('waiting for user to dismiss suspect screen', flush=True)
     device.deviceV2.sleep(1)
     timeout -= 1
     if timeout <= 0:

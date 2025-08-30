@@ -225,9 +225,9 @@ class Filter:
             field_max_potency_ratio = self.conditions.get(FIELD_MAX_POTENCY_RATIO, 999)
             field_blacklist_words = self.conditions.get(FIELD_BLACKLIST_WORDS, [])
             field_mandatory_words = self.conditions.get(FIELD_MANDATORY_WORDS, [])
-            field_specific_alphabet = self.conditions.get(FIELD_SPECIFIC_ALPHABET)
-            field_bio_language = self.conditions.get(FIELD_BIO_LANGUAGE)
-            field_bio_banned_language = self.conditions.get(FIELD_BIO_BANNED_LANGUAGE)
+            field_specific_alphabet = self.conditions.get(FIELD_SPECIFIC_ALPHABET, [])
+            field_bio_language = self.conditions.get(FIELD_BIO_LANGUAGE, [])
+            field_bio_banned_language = self.conditions.get(FIELD_BIO_BANNED_LANGUAGE, [])
             field_min_posts = self.conditions.get(FIELD_MIN_POSTS)
             field_mutual_friends = self.conditions.get(FIELD_MUTUAL_FRIENDS, -1)
             field_skip_if_link_in_bio = self.conditions.get(
@@ -432,8 +432,8 @@ class Filter:
 
         if not cleaned_biography and (
             len(field_mandatory_words) > 0
-            or field_bio_language is not None
-            or field_specific_alphabet is not None
+            or len(field_bio_language) > 0
+            or field_specific_alphabet > 0
         ):
             logger.info(
                 f"@{username} has an empty biography, that means there isn't any mandatory things that can be checked. Skip.",
@@ -445,9 +445,9 @@ class Filter:
         if (
             len(field_blacklist_words) > 0
             or len(field_mandatory_words) > 0
-            or field_specific_alphabet is not None
-            or field_bio_language is not None
-            or field_bio_banned_language is not None
+            or len(field_specific_alphabet) > 0
+            or len(field_bio_language) > 0
+            or len(field_bio_banned_language) > 0
         ):
             logger.debug("Pulling biography...")
             if len(field_blacklist_words) > 0:
@@ -487,7 +487,7 @@ class Filter:
                         username, profile_data, SkipReason.MISSING_MANDATORY_WORDS
                     )
 
-            if field_specific_alphabet is not None:
+            if len(field_specific_alphabet) > 0:
                 logger.debug("Checking primary character set of account biography...")
                 alphabet = self._find_alphabet(cleaned_biography)
 
@@ -499,7 +499,7 @@ class Filter:
                     return profile_data, self.return_check_profile(
                         username, profile_data, SkipReason.ALPHABET_NOT_MATCH
                     )
-            if field_bio_language is not None or field_bio_banned_language is not None:
+            if len(field_bio_language) > 0 or len(field_bio_banned_language) > 0:
                 skip_1 = skip_2 = False
                 logger.debug("Checking main language of account biography...")
                 language = self._find_language(cleaned_biography)
@@ -531,7 +531,7 @@ class Filter:
                         SkipReason.BIOGRAPHY_LANGUAGE_NOT_MATCH,
                     )
 
-        if field_specific_alphabet is not None:
+        if len(field_specific_alphabet) > 0:
             logger.debug("Checking primary character set of name...")
             if profile_data.fullname != "":
                 alphabet = self._find_alphabet(profile_data.fullname)
