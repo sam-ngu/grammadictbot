@@ -128,6 +128,7 @@ def restart(
                 "Reached crashes limit. Bot has crashed too much! Please check what's going on."
             )
             stop_bot(device, sessions, session_state)
+            raise Exception("Reached crashes limit. Bot has crashed too much!")
         logger.info("Something unexpected happened. Let's try again.")
     close_instagram(device)
     check_if_crash_popup_is_there(device)
