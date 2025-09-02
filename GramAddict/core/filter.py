@@ -433,7 +433,7 @@ class Filter:
         if not cleaned_biography and (
             len(field_mandatory_words) > 0
             or len(field_bio_language) > 0
-            or field_specific_alphabet > 0
+            or len(field_specific_alphabet) > 0
         ):
             logger.info(
                 f"@{username} has an empty biography, that means there isn't any mandatory things that can be checked. Skip.",

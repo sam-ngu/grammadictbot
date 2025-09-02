@@ -86,6 +86,29 @@ def graceful_shutdown(signum, frame):
   WebhookReports().run()
   shutdown()
 
+# TODO: remove the unneccessary apps
+# com.google.android.calendar, 
+# com.android.emulator.multidisplay, 
+# com.android.se, 
+# com.google.android.apps.wellbeing, 
+# com.google.android.videos, 
+# com.google.android.ext.services, 
+# com.google.android.gms, 
+# com.instagram.android, 
+# com.android.dialer, 
+# com.android.providers.calendar, 
+# com.google.android.ims, 
+# com.android.phone, 
+# com.android.bluetooth, 
+# com.android.systemui, 
+# com.google.android.permissioncontroller, 
+# com.google.android.youtube, 
+# com.google.android.inputmethod.latin, 
+# com.google.android.apps.nexuslauncher, 
+# com.google.android.providers.media.module, 
+# com.github.uiautomator, 
+# com.google.android.apps.wallpaper, 
+# com.google.android.apps.messaging,
 def main():
 
   # send webhook on session analytics
@@ -158,9 +181,12 @@ def main():
     GramAddict.run()
   except Exception as e:
     print('exception: ', e, flush=True)
-    # TODO: report to sentry 
-    # send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], err_message=f"Exception: {traceback.format_exc()}")
-    # TODO: uncomment this
+    res = send_webhook({
+      'event': 'failed',
+      'payload': {
+        'message': e.__str__()
+      }
+    })
     shutdown()
     return
 
