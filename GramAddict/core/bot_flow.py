@@ -360,6 +360,8 @@ def start_bot(**kwargs):
         session_state.finishTime = datetime.now()
         sessions.persist(directory=session_state.my_username)
 
+        AppState.session_state = session_state
+
         # print reports
         logger.info("Session finished. Going back to your profile to get stats..")
         profile_view.click_on_avatar()

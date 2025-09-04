@@ -10,6 +10,7 @@ from colorama import Fore, Style
 from GramAddict.core.plugin_loader import Plugin
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
+from GramAddict.core.session_state import SessionState
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,13 @@ def load_sessions(username) -> Optional[dict]:
         return None
 
 
-def _calculate_session_duration(session):
+def _calculate_session_duration(session: SessionState):
     try:
         start_datetime = datetime.strptime(
-            session["start_time"], "%Y-%m-%d %H:%M:%S.%f"
+            session.startTime, "%Y-%m-%d %H:%M:%S.%f"
         )
         finish_datetime = datetime.strptime(
-            session["finish_time"], "%Y-%m-%d %H:%M:%S.%f"
+            session.finishTime, "%Y-%m-%d %H:%M:%S.%f"
         )
         return int((finish_datetime - start_datetime).total_seconds() / 60)
     except ValueError as e:
@@ -37,24 +38,23 @@ def _calculate_session_duration(session):
         print(f"{session['id']} has no finish_time. Skipping duration calculation.", flush=True)
         return 0
 
-def generate_report(
-    last_session,
-    followers_now,
-    following_now,
-):
-    return {
-        "followers_now": followers_now,
-        "followers_gained": (followers_now - last_session.get("profile", {}).get("followers", 0)) if followers_now else None,
-        "following_now": following_now,
-        "following_gained": (following_now - last_session.get("profile", {}).get("following", 0)) if followers_now else None,
+def generate_report():
+    session = AppState.session_state
+    duration = _calculate_session_duration(session)
 
-        "duration": last_session["duration"],
-        "total_likes": last_session["total_likes"],
-        "total_followed": last_session["total_followed"],
-        "total_unfollowed": last_session["total_unfollowed"],
-        "total_watched": last_session["total_watched"],
-        "total_comments": last_session["total_comments"],
-        "total_pm": last_session["total_pm"],        
+    return {
+        "followers_now": session.my_followers_count,
+        # "followers_gained": (followers_now - session.get("profile", {}).get("followers", 0)) if followers_now else None,
+        "following_now": session.my_following_count,
+        # "following_gained": (following_now - session.get("profile", {}).get("following", 0)) if followers_now else None,
+
+        "duration": duration,
+        "total_likes": session.totalLikes,
+        "total_followed": session.totalFollowed,
+        "total_unfollowed": session.totalUnfollowed,
+        "total_watched": session.totalWatched,
+        "total_comments": session.totalComments,
+        "total_pm": session.totalPm,        
     }
 
 
@@ -66,34 +66,26 @@ class WebhookReports:
     def run():
         print('WebhookReports running....', flush=True)
         username = AppState.configyml.get("username")
-        session_state = AppState.session_state
-        if not session_state:
+        if not AppState.session_state:
             print("No session state found. Skipping report generation.", flush=True)
             return
-        followers_now = session_state.my_followers_count
-        following_now = session_state.my_following_count
 
         if username is None:
             print("You have to specify a username for getting reports!")
             return
 
-        last_session = None
-        with load_sessions(username) as sessions:
-            if not sessions:
-                print(
-                    f"No session data found for {username}. Skipping report generation."
-                )
-                return
-            last_session = sessions[-1]
-            print('last_session', last_session, flush=True)
+        # last_session = None
+        # with load_sessions(username) as sessions:
+        #     if not sessions:
+        #         print(
+        #             f"No session data found for {username}. Skipping report generation."
+        #         )
+        #         return
+        #     last_session = sessions[-1]
+        #     print('last_session', last_session, flush=True)
         
-        last_session["duration"] = _calculate_session_duration(last_session)
 
-        report = generate_report(
-            last_session,
-            followers_now,
-            following_now,
-        )
+        report = generate_report()
 
         response = send_webhook({
             "event": "report",
