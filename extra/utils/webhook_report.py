@@ -77,15 +77,16 @@ class WebhookReports:
             print("You have to specify a username for getting reports!")
             return
 
-        sessions = load_sessions(username)
-        if not sessions:
-            print(
-                f"No session data found for {username}. Skipping report generation."
-            )
-            return
-
-        last_session = sessions[-1]
-        print('last_session', last_session, flush=True)
+        last_session = None
+        with load_sessions(username) as sessions:
+            if not sessions:
+                print(
+                    f"No session data found for {username}. Skipping report generation."
+                )
+                return
+            last_session = sessions[-1]
+            print('last_session', last_session, flush=True)
+        
         last_session["duration"] = _calculate_session_duration(last_session)
 
         report = generate_report(
