@@ -12,7 +12,7 @@ from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_sen
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
-from extra.utils.webhook_report import WebhookReports
+from extra.utils.webhook_report import WebhookReports, generate_report
 import signal
 import logging
 from adbutils.errors import AdbError
@@ -190,6 +190,14 @@ def main():
     })
     shutdown()
     return
+  
+  res = send_webhook({
+    'event': 'done',
+    'payload': {
+      'message': 'Done',
+      'report': generate_report()
+    }
+  })
 
   # save session before shutting down
   igsession.save_session_files(ig_username)
