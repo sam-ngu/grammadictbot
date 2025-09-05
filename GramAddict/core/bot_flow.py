@@ -105,7 +105,7 @@ def start_bot(**kwargs):
         )
         return
     device = create_device(configs.device_id, configs.app_id)
-    session_state = None
+    AppState.session_state = None
     if str(configs.args.total_sessions) != "-1":
         total_sessions = get_value(configs.args.total_sessions, None, -1)
     else:
@@ -140,22 +140,22 @@ def start_bot(**kwargs):
                     configs.username + " outside working hours, shutting down."
                 )
             # instead of waiting, we will stop the bot if it's outside working hours
-            return stop_bot(device, sessions, session_state, shutdown=shutdown)
-            # wait_for_next_session(time_left, session_state, sessions, device)
+            return stop_bot(device, sessions, AppState.session_state, shutdown=shutdown)
+            # wait_for_next_session(time_left, AppState.session_state, sessions, device)
 
         pre_post_script(path=configs.args.pre_script)
         if configs.args.restart_atx_agent:
             restart_atx_agent(device)
         get_device_info(device)
-        session_state = SessionState(configs)
-        session_state.set_limits_session()
-        sessions.append(session_state)
+        AppState.session_state = SessionState(configs)
+        AppState.session_state.set_limits_session()
+        sessions.append(AppState.session_state)
         check_screen_timeout()
         device.wake_up()
         head_up_notifications(enabled=False)
         logger.info(
             "-------- START: "
-            + str(session_state.startTime.strftime("%H:%M:%S - %Y/%m/%d"))
+            + str(AppState.session_state.startTime.strftime("%H:%M:%S - %Y/%m/%d"))
             + " --------",
             extra={"color": f"{Style.BRIGHT}{Fore.YELLOW}"},
         )
@@ -168,7 +168,7 @@ def start_bot(**kwargs):
                 logger.error(
                     "Can't unlock your screen. There may be a passcode on it. If you would like your screen to be turned on and unlocked automatically, please remove the passcode."
                 )
-                stop_bot(device, sessions, session_state, was_sleeping=False)
+                stop_bot(device, sessions, AppState.session_state, was_sleeping=False)
 
         logger.info("Device screen ON and unlocked.")
         if open_instagram(device):
@@ -217,40 +217,40 @@ def start_bot(**kwargs):
                     break
             account_view.refresh_account()
             (
-                session_state.my_username,
-                session_state.my_posts_count,
-                session_state.my_followers_count,
-                session_state.my_following_count,
+                AppState.session_state.my_username,
+                AppState.session_state.my_posts_count,
+                AppState.session_state.my_followers_count,
+                AppState.session_state.my_following_count,
             ) = profile_view.getProfileInfo()
-            AppState.session_state = session_state
+
         except Exception as e:
             logger.error(f"Exception: {e}")
             save_crash(device)
             break
 
         if (
-            session_state.my_username is None
-            or session_state.my_posts_count is None
-            or session_state.my_followers_count is None
-            or session_state.my_following_count is None
+            AppState.session_state.my_username is None
+            or AppState.session_state.my_posts_count is None
+            or AppState.session_state.my_followers_count is None
+            or AppState.session_state.my_following_count is None
         ):
             logger.critical(
                 "Could not get one of the following from your profile: username, # of posts, # of followers, # of followings. This is typically due to a soft-ban. Review the crash screenshot to see if this is the case."
             )
             logger.critical(
-                f"Username: {session_state.my_username}, Posts: {session_state.my_posts_count}, Followers: {session_state.my_followers_count}, Following: {session_state.my_following_count}"
+                f"Username: {AppState.session_state.my_username}, Posts: {AppState.session_state.my_posts_count}, Followers: {AppState.session_state.my_followers_count}, Following: {AppState.session_state.my_following_count}"
             )
             save_crash(device)
-            stop_bot(device, sessions, session_state)
+            stop_bot(device, sessions, AppState.session_state)
 
         if not is_log_file_updated():
             try:
-                update_log_file_name(session_state.my_username)
+                update_log_file_name(AppState.session_state.my_username)
             except Exception as e:
                 logger.error(
                     f"Failed to update log file name. Will continue anyway. {e}"
                 )
-        report_string = f"Hello, @{session_state.my_username}! You have {session_state.my_followers_count} followers and {session_state.my_following_count} followings so far."
+        report_string = f"Hello, @{AppState.session_state.my_username}! You have {AppState.session_state.my_followers_count} followers and {AppState.session_state.my_following_count} followings so far."
         logger.info(report_string, extra={"color": f"{Style.BRIGHT}{Fore.GREEN}"})
         if configs.args.repeat:
             logger.info(
@@ -276,7 +276,7 @@ def start_bot(**kwargs):
         logger.info(
             f"There is/are {len(jobs_list)-len(unfollow_jobs)} active-job(s) and {len(unfollow_jobs)} unfollow-job(s) scheduled for this session."
         )
-        storage = Storage(session_state.my_username)
+        storage = Storage(AppState.session_state.my_username)
         filters = Filter(storage)
         show_ending_conditions()
         if not configs.args.debug:
@@ -295,8 +295,8 @@ def start_bot(**kwargs):
                 active_limits_reached,
                 unfollow_limit_reached,
                 actions_limit_reached,
-            ) = session_state.check_limit(
-                limit_type=session_state.Limit.ALL, output=print_limits
+            ) = AppState.session_state.check_limit(
+                limit_type=AppState.session_state.Limit.ALL, output=print_limits
             )
             if actions_limit_reached:
                 logger.info(
@@ -304,7 +304,7 @@ def start_bot(**kwargs):
                     extra={"color": f"{Fore.CYAN}"},
                 )
                 break
-            if profile_view.getUsername() != session_state.my_username:
+            if profile_view.getUsername() != AppState.session_state.my_username:
                 logger.debug("Not in your main profile.")
                 tab_bar_view.navigateToProfile()
             if plugin in unfollow_jobs:
@@ -357,10 +357,8 @@ def start_bot(**kwargs):
                 print_limits = True
 
         # save the session in sessions.json
-        session_state.finishTime = datetime.now()
-        sessions.persist(directory=session_state.my_username)
-
-        AppState.session_state = session_state
+        AppState.session_state.finishTime = datetime.now()
+        sessions.persist(directory=AppState.session_state.my_username)
 
         # print reports
         logger.info("Session finished. Going back to your profile to get stats..")
@@ -395,7 +393,7 @@ def start_bot(**kwargs):
         head_up_notifications(enabled=True)
         logger.info(
             "-------- FINISH: "
-            + str(session_state.finishTime.strftime("%H:%M:%S - %Y/%m/%d"))
+            + str(AppState.session_state.finishTime.strftime("%H:%M:%S - %Y/%m/%d"))
             + " --------",
             extra={"color": f"{Style.BRIGHT}{Fore.YELLOW}"},
         )
@@ -426,7 +424,7 @@ def start_bot(**kwargs):
                     stop_bot(
                         device,
                         sessions,
-                        session_state,
+                        AppState.session_state,
                         was_sleeping=True,
                     )
             else:
@@ -439,7 +437,7 @@ def start_bot(**kwargs):
                 )
                 wait_for_next_session(
                     time_left,
-                    session_state,
+                    AppState.session_state,
                     sessions,
                     device,
                 )
