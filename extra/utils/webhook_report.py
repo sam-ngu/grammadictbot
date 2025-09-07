@@ -26,6 +26,9 @@ def load_sessions(username) -> Optional[dict]:
 
 def _calculate_session_duration(session: SessionState):
     try:
+        if session.startTime is None or session.finishTime is None:
+            return 0
+        
         start_datetime = session.startTime if isinstance(session.startTime, datetime) else datetime.strptime(
             session.startTime, "%Y-%m-%d %H:%M:%S.%f"
         )
