@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 from enum import Enum, auto
 from json import JSONEncoder
+import traceback
 
 from GramAddict.core.utils import get_value
 
@@ -148,6 +149,8 @@ class SessionState:
             f"- Total Successful Scraped Users:\t\t{'Limit Reached' if total_scraped else 'OK'} ({sum(self.totalScraped.values())}/{self.args.current_scraped_limit})",
         ]
 
+        all_limit_reached = total_likes and total_followed and total_watched and total_comments and total_pm and total_unfollowed
+
         if limit_type == SessionState.Limit.ALL:
             if output is not None:
                 if output:
@@ -156,20 +159,31 @@ class SessionState:
                 else:
                     for line in session_info:
                         logger.debug(line)
+            like_reached = total_likes and self.args.end_if_likes_limit_reached
+            followed_reached = total_followed and self.args.end_if_follows_limit_reached
+            watch_reached = total_watched and self.args.end_if_watches_limit_reached
+            comment_reached = total_comments and self.args.end_if_comments_limit_reached
+            pm_reached = total_pm and self.args.end_if_pm_limit_reached
 
+
+            # return (
+            #     like_reached
+            #     and followed_reached
+            #     and watch_reached
+            #     and comment_reached
+            #     and pm_reached,
+            #     total_unfollowed,
+            #     total_interactions or total_successful or total_scraped,
+            # )
+            # this is from original code
             return (
-                total_likes
-                and self.args.end_if_likes_limit_reached
-                or total_followed
-                and self.args.end_if_follows_limit_reached
-                or total_watched
-                and self.args.end_if_watches_limit_reached
-                or total_comments
-                and self.args.end_if_comments_limit_reached
-                or total_pm
-                and self.args.end_if_pm_limit_reached,
+                like_reached
+                or followed_reached
+                or watch_reached
+                or comment_reached
+                or pm_reached,
                 total_unfollowed,
-                total_interactions or total_successful or total_scraped,
+                all_limit_reached or total_interactions or total_successful or total_scraped,
             )
 
         elif limit_type == SessionState.Limit.LIKES:
@@ -219,14 +233,14 @@ class SessionState:
                 logger.info(session_info[7])
             else:
                 logger.debug(session_info[7])
-            return total_successful
+            return total_successful or all_limit_reached
 
         elif limit_type == SessionState.Limit.TOTAL:
             if output:
                 logger.info(session_info[8])
             else:
                 logger.debug(session_info[8])
-            return total_interactions
+            return total_interactions or all_limit_reached
 
         elif limit_type == SessionState.Limit.CRASHES:
             if output:

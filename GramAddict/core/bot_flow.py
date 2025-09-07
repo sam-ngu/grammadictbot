@@ -298,7 +298,7 @@ def start_bot(**kwargs):
             ) = AppState.session_state.check_limit(
                 limit_type=AppState.session_state.Limit.ALL, output=print_limits
             )
-            if actions_limit_reached:
+            if active_limits_reached or actions_limit_reached:
                 logger.info(
                     "At last one of these limits has been reached: interactions/successful or scraped. Ending session.",
                     extra={"color": f"{Fore.CYAN}"},
@@ -374,8 +374,8 @@ def start_bot(**kwargs):
         ) = profile_view.getProfileInfo()
         AppState.session_state.my_followers_count = followers_now
         AppState.session_state.my_following_count = following_now
-        logger.debug('running webhook reports...')
-        WebhookReports.run()
+        # logger.debug('running webhook reports...')
+        # WebhookReports.run()
 
         if analytics_at_end:
             configs.actions["analytics"].run(

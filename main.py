@@ -190,7 +190,7 @@ def main():
     })
     shutdown()
     return
-  
+  print('Sending done webhook...', flush=True)
   res = send_webhook({
     'event': 'done',
     'payload': {

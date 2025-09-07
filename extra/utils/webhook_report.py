@@ -26,10 +26,10 @@ def load_sessions(username) -> Optional[dict]:
 
 def _calculate_session_duration(session: SessionState):
     try:
-        start_datetime = datetime.strptime(
+        start_datetime = session.startTime if isinstance(session.startTime, datetime) else datetime.strptime(
             session.startTime, "%Y-%m-%d %H:%M:%S.%f"
         )
-        finish_datetime = datetime.strptime(
+        finish_datetime = session.finishTime if isinstance(session.finishTime, datetime) else datetime.strptime(
             session.finishTime, "%Y-%m-%d %H:%M:%S.%f"
         )
         return int((finish_datetime - start_datetime).total_seconds() / 60)
