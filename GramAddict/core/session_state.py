@@ -149,7 +149,7 @@ class SessionState:
             f"- Total Successful Scraped Users:\t\t{'Limit Reached' if total_scraped else 'OK'} ({sum(self.totalScraped.values())}/{self.args.current_scraped_limit})",
         ]
 
-        all_limit_reached = total_likes and total_followed and total_watched and total_comments and total_pm and total_unfollowed
+        all_limit_reached = total_likes and total_followed and total_watched and total_comments and total_pm
 
         if limit_type == SessionState.Limit.ALL:
             if output is not None:
