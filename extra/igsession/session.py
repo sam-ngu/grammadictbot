@@ -69,6 +69,12 @@ def save_session_files(social_username: str):
   zip_file_path = cwd.joinpath(zip_file_name)
   subprocess.run("zip -r " + zip_file_path.__str__() + " tmp/", cwd=cwd.__str__(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, encoding="utf8")
 
+  # check zip file size, if too small dont save eg less than 1 MB
+  zip_file_size = os.path.getsize(zip_file_path.__str__())
+  if zip_file_size < (1024 * 1024):
+    print("session zip file size too small, not saving", flush=True)
+    raise Exception("session zip file size too small, not saving, only " + str(zip_file_size / (1024 * 1024)) + " MB")
+
   # upload to storage
   client = storage_client()
 
