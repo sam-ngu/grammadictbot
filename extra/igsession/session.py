@@ -14,8 +14,31 @@ import yaml
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
 from GramAddict.core.webhook import send_webhook
 import uiautomator2 as u2
+import time
 
 load_dotenv(override=True)
+
+def run_command(cmd: str):
+  print('running ', cmd, flush=True)
+  process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+  process.wait()
+
+  stdout, stderr = process.communicate()
+
+  if(stderr):
+    raise Exception(stderr)
+  return stdout
+
+def remove_input_method():
+  output = run_command('adb shell ime list -s')
+  # reverse to disable fastinputime first
+  input_methods = output.split('\n').reverse()
+
+  for input_method in input_methods:
+    if not input_method:
+      continue
+    stdout = run_command(f'adb shell ime disable {input_method}')
+    print(stdout, flush=True)
 
 def storage_client():
     return boto3.client(service_name='s3', 
@@ -191,9 +214,11 @@ def login(ig_username: str):
   proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
   if proceed_home_screen_button.exists(Timeout.SHORT):
     proceed_home_screen_button.click()
+    send_webhook({
+      'event': 'login_ig_has_home_screen',
+    })
 
   # find login button, if does not exist then user has already logged in 
-  # TODO: use forgot password?
   login_button = device.find(className='android.view.View', text="Log in")
 
   current_app_info = device.deviceV2.app_current()
@@ -210,24 +235,60 @@ def login(ig_username: str):
   username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
   username_field.set_text(ig_username, mode=Mode.TYPE)
 
-  res = send_webhook({
-    'event': 'loginready',
-  })
+  # focusing on password field
+  password_field = device.find(className='android.widget.EditText', enabled=True, instance=1)
+  password_field.set_text('', mode=Mode.TYPE)
 
-  # TODO: what if user entered wrong password??
+  # hide keyboard we know exactly what to hide in IG UI
+  device.deviceV2.sleep(1)
+  remove_input_method()
+
+  res = send_webhook({
+    'event': 'login_ready',
+  })
 
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
   print('checking if login button exists', flush=True)
+  interval = 0.5
   while login_button.exists(Timeout.SHORT):
-    device.deviceV2.sleep(1)
-    timeout -= 1
+    device.deviceV2.sleep(interval)
+    timeout -= interval
     if timeout <= 0:
+      time.sleep(100000)
       print('timed out waiting for user to login', flush=True)
       return 'timeout'
-    
-  print('user logged in', flush=True)
+    # force user to not modify username
+    entered_username = username_field.get_text()
+    if entered_username != ig_username:
+      print('user entered wrong username', flush=True)
+      username_field.set_text(ig_username, mode=Mode.TYPE)
+      remove_input_method()
+      send_webhook({
+        'event': 'login_username_modified',
+      })
+  send_webhook({
+    'event': 'login_entered_password',
+  })
+  print('user entered password', flush=True)
   device.deviceV2.sleep(1)
+  time.sleep(1000000)
+  # TODO: user may enter wrong password - verify if following is correct
+  # check if wrong password screen, if so send webhook 
+  check_email = device.find(className='android.view.View', text="Check your email")
+  try_another_way = device.find(className='android.view.View', text="Try another way")
+
+  # dont click on back button, the ig behaviour is not consistent, better to restart a new machine 
+  print('checking if user entered wrong password', flush=True)
+  is_in_wrong_password_screen = check_email.exists(Timeout.SHORT) or try_another_way.exists(Timeout.SHORT)
+  if is_in_wrong_password_screen:
+    send_webhook({
+      'event': 'login_wrong_password',
+    })
+    print('user entered wrong password', flush=True)
+    raise Exception('user entered wrong password')
+    
+
 
   # may see code verify screen
   #  check if got the send code verify email screen
@@ -235,16 +296,23 @@ def login(ig_username: str):
 
   enter_code = device.find(className='android.view.View', text="Enter confirmation code")
 
-  # TODO this is not reliable, when testing live, the following got bypassed, change timeout to Medium? 
-  timeout = 60 * 5  # 5 min
+  timeout = 60 * 10  # 10 min
   print('checking if user need to enter 2FA code', flush=True)
-  while verify_code.exists(Timeout.MEDIUM) or enter_code.exists(Timeout.MEDIUM):
-    device.deviceV2.sleep(1)
-    timeout -= 1
+  needs_2fa = verify_code.exists(Timeout.MEDIUM) or enter_code.exists(Timeout.MEDIUM) 
+  if needs_2fa:
+    send_webhook({
+      'event': 'login_needs_2fa',
+    })
+  while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
+    device.deviceV2.sleep(interval)
+    timeout -= interval
     if timeout <= 0:
       print('timed out waiting for user to enter verification code')
       return 'timeout'
-
+  
+  send_webhook({
+    'event': 'login_passed_2fa',
+  })
   print('passed verification code', flush=True)
   
   # may see suspect screen
@@ -253,18 +321,28 @@ def login(ig_username: str):
   is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
   timeout = 60 * 2  # 2 min
   print('checking for user to dismiss suspect screen', flush=True)
-  while is_suspect.exists(Timeout.MEDIUM):
-    device.deviceV2.sleep(1)
-    timeout -= 1
-    if timeout <= 0:
-      dismiss_btn = device.find(className='android.view.View', text="Dismiss")
-      dismiss_btn.click()
-      break
+  if is_suspect.exists(Timeout.MEDIUM):
+    send_webhook({
+      'event': 'login_suspect_screen',
+    })
+    dismiss_btn = device.find(className='android.view.View', text="Dismiss")
+    dismiss_btn.click()
+
+  # while is_suspect.exists(Timeout.MEDIUM):
+  #   device.deviceV2.sleep(1)
+  #   timeout -= 1
+  #   if timeout <= 0:
+  #     dismiss_btn = device.find(className='android.view.View', text="Dismiss")
+  #     dismiss_btn.click()
+  #     break
 
   # may see save profile button
   save_profile_button = device.find(className='android.view.View', text="Save")
   if save_profile_button.exists(Timeout.MEDIUM):
     save_profile_button.click_retry(sleep=5, maxretry=3)
+    send_webhook({
+      'event': 'login_saved_profile',
+    })
 
   return 'loggedin'
 

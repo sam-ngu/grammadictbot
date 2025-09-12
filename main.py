@@ -6,8 +6,8 @@ import yaml
 import requests
 from pathlib import Path
 from extra.igsession import session as igsession
-import GramAddict
 import traceback
+import GramAddict
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
@@ -18,6 +18,7 @@ import logging
 from adbutils.errors import AdbError
 from datetime import datetime
 from dotenv import load_dotenv
+import playground
 load_dotenv(override=True)
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -178,7 +179,6 @@ def main():
   try:
     # if telegramyml is not None or telegramyml != '':
     #   telegram_bot_send_text(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'], 'Running gramaddict for: ' + ig_username)
-
     GramAddict.run()
   except Exception as e:
     print('exception: ', e, flush=True)
@@ -212,7 +212,7 @@ def main():
   shutdown()
 
 
-def playground():
+def playground_dev():
   # To run dev mode, run this in terminal: DEV_MODE=True python3 main.py 
 
   # fisherman_payload = json.loads(os.environ['SCHED_FISHERMAN_PAYLOAD'])
@@ -228,7 +228,8 @@ def playground():
     cwd = Path(__file__).parent
     sys.argv.append(cwd.joinpath('accounts/' + 'kellysfishh' + '/config.yml').__str__())
   
-  GramAddict.run()
+  # start_bot()
+  playground.main()
 
   pass
 
@@ -237,5 +238,9 @@ if __name__ == "__main__":
   signal.signal(signal.SIGINT, graceful_shutdown)
   # signal cant handle SIGKILL, SIGKILL is not meant for gracefull shutdown
   # signal.signal(signal.SIGKILL, graceful_shutdown)
+
+  if os.environ.get('DEV_MODE') == 'True':
+    playground_dev()
+    sys.exit(0)
 
   main()
