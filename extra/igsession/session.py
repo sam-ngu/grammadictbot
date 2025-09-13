@@ -29,10 +29,13 @@ def run_command(cmd: str):
     raise Exception(stderr)
   return stdout
 
-def remove_input_method():
+def list_input_methods():
   output = run_command('adb shell ime list -s')
+  return output.split('\n')
+
+def remove_input_methods():
   # reverse to disable fastinputime first
-  input_methods = output.split('\n').reverse()
+  input_methods = list_input_methods()
 
   for input_method in input_methods:
     if not input_method:
@@ -239,41 +242,46 @@ def login(ig_username: str):
   password_field = device.find(className='android.widget.EditText', enabled=True, instance=1)
   password_field.set_text('', mode=Mode.TYPE)
 
-  # hide keyboard we know exactly what to hide in IG UI
+  # hide keyboard so we know exactly what px to hide in IG UI
   device.deviceV2.sleep(1)
-  remove_input_method()
-
   res = send_webhook({
     'event': 'login_ready',
   })
+  remove_input_methods()
 
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
   print('checking if login button exists', flush=True)
   interval = 0.5
-  while login_button.exists(Timeout.SHORT):
+  while login_button.exists(Timeout.TINY):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
-      time.sleep(100000)
       print('timed out waiting for user to login', flush=True)
       return 'timeout'
     # force user to not modify username
-    entered_username = username_field.get_text()
-    if entered_username != ig_username:
-      print('user entered wrong username', flush=True)
-      username_field.set_text(ig_username, mode=Mode.TYPE)
-      remove_input_method()
-      send_webhook({
-        'event': 'login_username_modified',
-      })
+    try:
+      if username_field.exists(Timeout.TINY):
+        entered_username = username_field.get_text()
+        remove_input_methods()
+        if entered_username != ig_username:
+          print('user entered wrong username', flush=True)
+          username_field.set_text(ig_username, mode=Mode.TYPE)
+          remove_input_methods()
+          send_webhook({
+            'event': 'login_username_modified',
+          })
+    except Exception as e:
+      # this may happen once moved passed login screen, ignore
+      print('except in login block: ',e, flush=True)
+      pass
+
   send_webhook({
     'event': 'login_entered_password',
   })
   print('user entered password', flush=True)
   device.deviceV2.sleep(1)
-  time.sleep(1000000)
-  # TODO: user may enter wrong password - verify if following is correct
+  # user may enter wrong password - verify if following is correct
   # check if wrong password screen, if so send webhook 
   check_email = device.find(className='android.view.View', text="Check your email")
   try_another_way = device.find(className='android.view.View', text="Try another way")
@@ -288,22 +296,37 @@ def login(ig_username: str):
     print('user entered wrong password', flush=True)
     raise Exception('user entered wrong password')
     
-
+  device.deviceV2.sleep(1)
 
   # may see code verify screen
   #  check if got the send code verify email screen
   verify_code = device.find(className='android.view.View', text="Confirm it's you")
-
-  enter_code = device.find(className='android.view.View', text="Enter confirmation code")
+  verify_confirm_button = device.find(className='android.view.View', text="Continue")
 
   timeout = 60 * 10  # 10 min
   print('checking if user need to enter 2FA code', flush=True)
-  needs_2fa = verify_code.exists(Timeout.MEDIUM) or enter_code.exists(Timeout.MEDIUM) 
+  needs_2fa = verify_code.exists(Timeout.MEDIUM)  
   if needs_2fa:
     send_webhook({
       'event': 'login_needs_2fa',
     })
-  while verify_code.exists(Timeout.SHORT) or enter_code.exists(Timeout.SHORT):
+  
+  # Wait for user to click on continue button
+  while verify_code.exists(Timeout.SHORT) and verify_confirm_button.exists(Timeout.SHORT):
+    device.deviceV2.sleep(interval)
+    timeout -= interval
+    if timeout <= 0:
+      print('timed out waiting for user to proceed with 2fa')
+      return 'timeout'
+    
+  print('user proceed with 2fa to get code', flush=True)
+  send_webhook({
+    'event': 'login_proceed_2fa_get_code',
+  })
+
+  enter_code = device.find(className='android.view.View', text="Enter confirmation code")
+
+  while enter_code.exists(Timeout.SHORT):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
@@ -328,13 +351,7 @@ def login(ig_username: str):
     dismiss_btn = device.find(className='android.view.View', text="Dismiss")
     dismiss_btn.click()
 
-  # while is_suspect.exists(Timeout.MEDIUM):
-  #   device.deviceV2.sleep(1)
-  #   timeout -= 1
-  #   if timeout <= 0:
-  #     dismiss_btn = device.find(className='android.view.View', text="Dismiss")
-  #     dismiss_btn.click()
-  #     break
+  device.deviceV2.sleep(1)
 
   # may see save profile button
   save_profile_button = device.find(className='android.view.View', text="Save")
@@ -343,6 +360,7 @@ def login(ig_username: str):
     send_webhook({
       'event': 'login_saved_profile',
     })
+  device.deviceV2.sleep(1)
 
   return 'loggedin'
 

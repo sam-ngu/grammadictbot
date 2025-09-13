@@ -160,11 +160,12 @@ def main():
       return
   except Exception as e:
     # send crash event , should retry machine
+    print('exception: ', e, flush=True)
+
     res = send_webhook({
       'event': 'crashed',
       'payload': e.__str__()
     })
-    print('exception: ', e, flush=True)
     return
 
   # exec python run.py
