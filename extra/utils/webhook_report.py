@@ -46,6 +46,7 @@ def generate_report():
     duration = _calculate_session_duration(session)
 
     return {
+        "total_crashed": session.totalCrashes,
         "followers_now": session.my_followers_count,
         # "followers_gained": (followers_now - session.get("profile", {}).get("followers", 0)) if followers_now else None,
         "following_now": session.my_following_count,
