@@ -21,6 +21,13 @@ from dotenv import load_dotenv
 import playground
 load_dotenv(override=True)
 
+if os.environ.get('SENTRY_DSN'):
+  import sentry_sdk
+  sentry_sdk.init(
+    dsn=os.environ['SENTRY_DSN'],
+    traces_sample_rate=1.0
+  )
+
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 logger.info("----------- session " + current_time + " -----------")

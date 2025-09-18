@@ -6,7 +6,7 @@ from os import path
 from atomicwrites import atomic_write
 from colorama import Fore
 
-from GramAddict.core.device_facade import Direction, Timeout
+from GramAddict.core.device_facade import Direction, Timeout, DeviceFacade
 from GramAddict.core.navigation import (
     nav_to_blogger,
     nav_to_feed,
@@ -411,7 +411,10 @@ def handle_likers(
                         opened = True
                         logger.info("Back to likers list.")
                         device.back()
-
+            except DeviceFacade.JsonRpcError as e:
+                # this error will throw when device.back() is not working
+                logger.info(f"JSON RPC Error: {e}", extra={"color": f"{Fore.RED}"})
+                device.back()
             except IndexError:
                 logger.info(
                     "Cannot get next item: probably reached end of the screen.",
@@ -785,7 +788,9 @@ def iterate_over_followers(
                     if element_opened:
                         logger.info("Back to followers list")
                         device.back()
-
+        except DeviceFacade.JsonRpcError as e:
+            logger.info(f"DeviceFacade.JsonRpcError: {e}", extra={"color": f"{Fore.RED}"})
+            device.back()
         except IndexError:
             logger.info(
                 "Cannot get next item: probably reached end of the screen.",

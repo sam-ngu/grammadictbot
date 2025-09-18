@@ -85,6 +85,7 @@ def run_safely(device, device_id, sessions, session_state, screen_record, config
                 )
 
             except Exception as e:
+                # TODO: report to sentry
                 logger.error(traceback.format_exc())
                 for exception_line in traceback.format_exception_only(type(e), e):
                     logger.critical(
