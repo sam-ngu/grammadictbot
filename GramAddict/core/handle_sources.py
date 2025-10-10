@@ -790,6 +790,7 @@ def iterate_over_followers(
                         device.back()
         except DeviceFacade.JsonRpcError as e:
             logger.info(f"DeviceFacade.JsonRpcError: {e}", extra={"color": f"{Fore.RED}"})
+            # TODO: this is not very reliable, find way to accurately determine page position
             device.back()
         except IndexError:
             logger.info(

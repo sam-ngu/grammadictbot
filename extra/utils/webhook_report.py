@@ -11,6 +11,7 @@ from GramAddict.core.plugin_loader import Plugin
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from GramAddict.core.session_state import SessionState
+import sentry_sdk
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,11 @@ def _calculate_session_duration(session: SessionState):
 
 def generate_report():
     session = AppState.session_state
+    if not session:
+        print("No session data found. Skipping report generation.", flush=True)
+        # sentry_sdk.set_context("Session state", AppState.session_state)
+        sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
+        return None
     duration = _calculate_session_duration(session)
 
     return {
@@ -72,6 +78,7 @@ class WebhookReports:
         username = AppState.configyml.get("username")
         if not AppState.session_state:
             print("No session state found. Skipping report generation.", flush=True)
+            sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
             return
 
         if username is None:
@@ -102,3 +109,5 @@ class WebhookReports:
             )
         else:
             print(f"Failed to send Webhook message", flush=True)
+            sentry_sdk.set_context("webhook response", response)
+            sentry_sdk.capture_message("Failed to send Webhook message", level="error")
