@@ -197,6 +197,8 @@ def get_config_path(ig_username: str, yaml_name: str = "config.yml"):
   return Path(__file__).parent.parent.parent.joinpath("accounts/" + ig_username + "/" + yaml_name)
 
 def login(ig_username: str):
+  login_only = os.environ['GRAMADDICT_MODE'] == 'login'
+
   # config_path = Path(__file__).parent.parent.parent.joinpath("accounts/" + ig_username + "/config.yml")
   config_path = get_config_path(ig_username, 'config.yml')
   configs = Config(first_run=True, config=config_path.__str__())
@@ -225,9 +227,10 @@ def login(ig_username: str):
   proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
   if proceed_home_screen_button.exists(Timeout.SHORT):
     proceed_home_screen_button.click()
-    send_webhook({
-      'event': 'login_ig_has_home_screen',
-    })
+    if login_only:
+      send_webhook({
+        'event': 'login_ig_has_home_screen',
+      })
 
   # find login button, if does not exist then user has already logged in 
   login_button = device.find(className='android.view.View', text="Log in")
@@ -235,6 +238,11 @@ def login(ig_username: str):
   if not login_button.exists(Timeout.SHORT):
     print('user has already logged in', flush=True)
     return 'already_logged_in'
+
+  # here login button exist
+  # if this is not supposed to be a login machine, need to stop and send webhook outside to inform user
+  if not login_only:
+    return 'invalid_machine_mode'
 
   username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
   username_field.set_text(ig_username, mode=Mode.TYPE)
