@@ -95,6 +95,15 @@ def graceful_shutdown(signum, frame):
   WebhookReports().run()
   shutdown()
 
+def send_need_relogin_webhook(contextMessage: str = ''):
+  send_webhook({
+    'event': 'failed',
+    'payload': {
+      'message': 'need_relogin',
+      'context': contextMessage
+    }
+  })
+
 # TODO: remove the unneccessary apps
 # com.google.android.calendar, 
 # com.android.emulator.multidisplay, 
@@ -163,8 +172,16 @@ def main():
         'event': 'loggedin' if result == 'loggedin' else 'failed',
         'payload': {'message': result}
       })
+      if res == 'ig_launch_error':
+        send_need_relogin_webhook('ig unable to launch, usually because of corrupted session in the cloud.')
       shutdown()
       return
+    else:
+      # standard mode, 
+      # if result is not 'already_logged_in', should send webhook failed
+      if result != 'already_logged_in':
+        send_need_relogin_webhook('session auth data corrupted in the cloud.')
+        shutdown()
   except Exception as e:
     # send crash event , should retry machine
     print('exception: ', e, flush=True)

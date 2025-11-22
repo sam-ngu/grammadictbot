@@ -214,6 +214,14 @@ def login(ig_username: str):
 
   device.deviceV2.sleep(3)
 
+  current_app_info = device.deviceV2.app_current()
+  print('current app info is ', current_app_info, flush=True)
+  print('package is ', current_app_info['package'], flush=True)
+  if current_app_info['package'] != app_id:
+    print('instagram is not opened', flush=True)
+    # usually because corrupted session in the cloud
+    return 'ig_launch_error'
+
   proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
   if proceed_home_screen_button.exists(Timeout.SHORT):
     proceed_home_screen_button.click()
@@ -224,13 +232,6 @@ def login(ig_username: str):
   # find login button, if does not exist then user has already logged in 
   login_button = device.find(className='android.view.View', text="Log in")
 
-  current_app_info = device.deviceV2.app_current()
-  print('current app info is ', current_app_info, flush=True)
-  print('package is ', current_app_info['package'], flush=True)
-  if current_app_info['package'] != app_id:
-    print('instagram is not opened', flush=True)
-    # usually because corrupted session in the cloud
-    return 'ig_launch_error'
   if not login_button.exists(Timeout.SHORT):
     print('user has already logged in', flush=True)
     return 'already_logged_in'
