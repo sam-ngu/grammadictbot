@@ -119,7 +119,8 @@ def start_bot(**kwargs):
 
     if os.environ.get('DEV_MODE') == "True":
         import playground
-        playground.main(device)
+        sleep(3600 * 5)
+        # playground.main()
         return
 
     while True:

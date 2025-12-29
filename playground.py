@@ -7,7 +7,8 @@ from GramAddict.core.resources import ResourceID as resources
 # from GramAddict.core.resources import ClassName
 from GramAddict.core.config import Config
 import subprocess
-
+from extra.igsession.session import storage_client
+import os
 
 def run_command(cmd: str):
   print('running ', cmd, flush=True)
@@ -32,6 +33,8 @@ def remove_input_method():
     run_command(f'adb shell ime disable {input_method}')
 
 def main():
+
+  # "sessionfiles_" + social_username + "_" + os.environ['FG_SOCIAL_ACCOUNT_ID'] + ".zip"
   # if not "--config" in sys.argv:
   #   sys.argv.append("--config")
   #   cwd = Path(__file__).parent
@@ -48,11 +51,14 @@ def main():
   device = create_device(None, app_id)
   ResourceID = resources(app_id)
 
+  resend_code = device.find(text="Wait a moment")
 
-  check_email = device.find(className='android.view.View', text="Check your email")
-  try_another_way = device.find(className='android.view.View', text="Try another way")
-  is_in_wrong_password_screen = check_email.exists(Timeout.SHORT) or try_another_way.exists(Timeout.SHORT)
-  print('checking if user entered wrong password', is_in_wrong_password_screen, flush=True)
+  print('resend_code', resend_code.exists(Timeout.SHORT), flush=True)
+
+  # check_email = device.find(className='android.view.View', text="Check your email")
+  # try_another_way = device.find(className='android.view.View', text="Try another way")
+  # is_in_wrong_password_screen = check_email.exists(Timeout.SHORT) or try_another_way.exists(Timeout.SHORT)
+  # print('checking if user entered wrong password', is_in_wrong_password_screen, flush=True)
   
 
 

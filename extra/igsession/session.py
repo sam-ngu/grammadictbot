@@ -258,11 +258,19 @@ def login(ig_username: str):
   })
   remove_input_methods()
 
+  if os.environ.get('DEV_MODE') == "True":
+    import playground
+    time.sleep(60*60* 5)
+    # playground.main()
+    # sys.exit(0)
+    return
+
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
   print('checking if login button exists', flush=True)
   interval = 0.5
-  while login_button.exists(Timeout.TINY):
+  wrong_password_modal = device.find(text="Incorrect password")
+  while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.TINY):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
@@ -319,9 +327,9 @@ def login(ig_username: str):
     send_webhook({
       'event': 'login_needs_2fa',
     })
-  
+
   # Wait for user to click on continue button
-  while verify_code.exists(Timeout.SHORT) and verify_confirm_button.exists(Timeout.SHORT):
+  while (verify_code.exists(Timeout.SHORT) and verify_confirm_button.exists(Timeout.SHORT)):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
@@ -333,9 +341,12 @@ def login(ig_username: str):
     'event': 'login_proceed_2fa_get_code',
   })
 
-  enter_code = device.find(className='android.view.View', text="Enter confirmation code")
+  enter_code = device.find(text="Enter confirmation code")
 
-  while enter_code.exists(Timeout.SHORT):
+  # check if user clicked on resend code and the Wait a moment modal pops up
+  resend_code_wait_a_moment = device.find(text="Wait a moment")
+  
+  while enter_code.exists(Timeout.SHORT) or resend_code_wait_a_moment.exists(Timeout.TINY):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
