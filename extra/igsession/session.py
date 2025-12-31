@@ -270,6 +270,7 @@ def login(ig_username: str):
   print('checking if login button exists', flush=True)
   interval = 0.5
   wrong_password_modal = device.find(text="Incorrect password")
+  unable_to_login_modal = device.find(text="Unable to log in")
   while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.TINY):
     device.deviceV2.sleep(interval)
     timeout -= interval
@@ -292,6 +293,11 @@ def login(ig_username: str):
       # this may happen once moved passed login screen, ignore
       print('except in login block: ',e, flush=True)
       pass
+  
+  if unable_to_login_modal.exists(Timeout.SHORT):
+    print('unable to login', flush=True)
+    # when this happens, its most likely ig has blocked the login attempt, due to suspicious location. Australian ip tends to do this
+    return 'unable_to_login_due_to_unknown_error'
 
   send_webhook({
     'event': 'login_entered_password',
@@ -382,6 +388,15 @@ def login(ig_username: str):
     })
   device.deviceV2.sleep(1)
 
+  # TODO: verify see logged in screen, else throw error? - prob no need, as soon as see the save profile button, we can safely assume the user is logged in 
+  # could either see the save profile button or the logged in screen or the setup new device screen
+  # if see neither, throw error? 
+  # setup_new_device = device.find(className='android.view.View', text="Set up on new device")
+  # allow_button = device.find(className='android.view.View', text="Allow")
+  # if setup_new_device.exists(Timeout.MEDIUM) or allow_button.exists(Timeout.MEDIUM):
+  #   allow_button.click_retry(sleep=5, maxretry=3)
+    
+
   return 'loggedin'
 
   username = configs.config.get('username')
@@ -408,15 +423,28 @@ def login(ig_username: str):
 def init_ig_session(social_username: str):
   
   has_unpacked = unpack_session_files_to_machine(social_username)
-  if not has_unpacked:
-    # need to login an upload session file
-    result = login(social_username)
-    if result == 'already_logged_in' or result == 'loggedin':
-      print('Saving session files after logged in', flush=True)
+  is_login_mode = os.environ['GRAMADDICT_MODE'] == 'login'
+
+  # standard mode but no session files in cloud
+  if not is_login_mode and not has_unpacked:
+    print('no session files found in cloud storage', flush=True)
+    return 'no_session_files'
+
+  # standard mode and has session file [handled in login()] 
+  # login mode and no session file - handled in login() - initiate login 
+  # login mode and has session file - handled in login() - return already logged in 
+
+  # need to login an upload session file
+  result = login(social_username)
+  if result == 'already_logged_in' or result == 'loggedin':
+    print('Saving session files after logged in', flush=True)
+    if is_login_mode:
       save_session_files(social_username)
-    return result  
-  else:
-    print('unpacked session files to machine', flush=True)
+  return result  
+
+  # if not has_unpacked:
+  # else:
+  #   print('unpacked session files to machine', flush=True)
 
 if __name__ == "__main__":
   # print(os.environ['AWS_ACCESS_KEY_ID'])
