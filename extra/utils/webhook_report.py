@@ -50,6 +50,13 @@ def generate_report():
         sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
         return None
     duration = _calculate_session_duration(session)
+    total_followed_num = 0
+    for source, count in session.totalFollowed.items():
+        # if total_followed.get(source) is None:
+        #     total_followed[source] = count
+        # else:
+        #     total_followed[source] += count
+        total_followed_num += count
 
     return {
         "total_crashed": session.totalCrashes,
@@ -60,7 +67,7 @@ def generate_report():
 
         "duration": duration,
         "total_likes": session.totalLikes,
-        "total_followed": session.totalFollowed,
+        "total_followed": total_followed_num,
         "total_unfollowed": session.totalUnfollowed,
         "total_watched": session.totalWatched,
         "total_comments": session.totalComments,
