@@ -92,7 +92,8 @@ def graceful_shutdown(signum, frame):
   #   "event": "testwebhook",
   # })
   # setting sessionFinishTime for analytics
-  AppState.session_state.finishTime = datetime.now()
+  if AppState.session_state:
+    AppState.session_state.finishTime = datetime.now()
   WebhookReports().run()
   shutdown()
 
