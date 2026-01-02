@@ -422,13 +422,14 @@ def login(ig_username: str):
 
 def init_ig_session(social_username: str):
   
-  has_unpacked = unpack_session_files_to_machine(social_username)
+  # if session file is already corrupted and currently in login mode, user will never get to see the login screen
   is_login_mode = os.environ['GRAMADDICT_MODE'] == 'login'
-
-  # standard mode but no session files in cloud
-  if not is_login_mode and not has_unpacked:
-    print('no session files found in cloud storage', flush=True)
-    return 'no_session_files'
+  if not is_login_mode:
+    has_unpacked = unpack_session_files_to_machine(social_username)
+    # standard mode but no session files in cloud
+    if not has_unpacked:
+      print('no session files found in cloud storage', flush=True)
+      return 'no_session_files'
 
   # standard mode and has session file [handled in login()] 
   # login mode and no session file - handled in login() - initiate login 
