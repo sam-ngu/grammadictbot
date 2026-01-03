@@ -253,10 +253,11 @@ def login(ig_username: str):
 
   # hide keyboard so we know exactly what px to hide in IG UI
   device.deviceV2.sleep(1)
+  remove_input_methods()
+
   res = send_webhook({
     'event': 'login_ready',
   })
-  remove_input_methods()
 
   if os.environ.get('DEV_MODE') == "True":
     import playground
