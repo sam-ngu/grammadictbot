@@ -29,7 +29,7 @@ def send_webhook(payload: dict):
   try:
     logs = {
       'fisher_stdout': ''.join(_get_last_n_lines('/home/androidusr/logs/log_gramaddict.stdout.log')),
-      'fisher_stderr': ''.join(_get_last_n_lines('/home/androidusr/logs/log_gramaddict.stderr.log')),
+      'fisher_stderr': ''.join(_get_last_n_lines('/home/androidusr/logs/log_gramaddict.stderr.log', 100)),
     }
     ig_username = AppState.configyml['username']
     payload.update({
