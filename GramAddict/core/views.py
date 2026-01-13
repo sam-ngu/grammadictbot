@@ -1095,6 +1095,13 @@ class AccountView:
         action_bar = ProfileView._getActionBarTitleBtn(self)
         if action_bar is not None:
             current_profile_name = action_bar.get_text()
+            
+            # could be Instagram User , happens when not fully loaded? need to refresh 
+            # cant easily replicate this issue 
+            if current_profile_name.strip().upper() == 'INSTAGRAM USER': 
+                self.refresh_account()
+                current_profile_name = action_bar.get_text()
+
             # in private accounts there is little lock which is codec as two spaces (should be \u1F512)
             if current_profile_name.strip().upper() == username.upper():
                 logger.info(
