@@ -209,11 +209,17 @@ def main():
     GramAddict.run()
   except Exception as e:
     print('exception: ', e, flush=True)
+    payload = {
+      'message': e.__str__()
+    }
+    # if standard mode, send report
+    if not login_only:
+      payload.update({
+      'report': generate_report(),
+      })
     res = send_webhook({
       'event': 'failed',
-      'payload': {
-        'message': e.__str__()
-      }
+      'payload': payload
     })
     shutdown()
     return

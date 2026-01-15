@@ -138,4 +138,11 @@ def restart(
         print_full_report(sessions, configs.args.scrape_to_file)
         sessions.persist(directory=session_state.my_username)
         sys.exit(2)
-    TabBarView(device).navigateToProfile()
+    try:
+        TabBarView(device).navigateToProfile()
+    except Exception as e:
+        # could raise DeviceFacade.AppHasCrashed from checking ig is opened, could be memory issues
+        print_full_report(sessions, configs.args.scrape_to_file)
+        sessions.persist(directory=session_state.my_username)
+        raise e
+
