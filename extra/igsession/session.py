@@ -254,6 +254,7 @@ def login(ig_username: str):
   # hide keyboard so we know exactly what px to hide in IG UI
   device.deviceV2.sleep(1)
   remove_input_methods()
+  device.deviceV2.sleep(1)
 
   res = send_webhook({
     'event': 'login_ready',
@@ -336,7 +337,7 @@ def login(ig_username: str):
     })
 
   # Wait for user to click on continue button
-  while (verify_code.exists(Timeout.SHORT) and verify_confirm_button.exists(Timeout.SHORT)):
+  while (verify_code.exists(Timeout.TINY) and verify_confirm_button.exists(Timeout.TINY)):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
@@ -353,7 +354,7 @@ def login(ig_username: str):
   # check if user clicked on resend code and the Wait a moment modal pops up
   resend_code_wait_a_moment = device.find(text="Wait a moment")
   
-  while enter_code.exists(Timeout.SHORT) or resend_code_wait_a_moment.exists(Timeout.TINY):
+  while enter_code.exists(Timeout.TINY) or resend_code_wait_a_moment.exists(Timeout.TINY):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
