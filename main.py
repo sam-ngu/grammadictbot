@@ -8,11 +8,12 @@ from pathlib import Path
 from extra.igsession import session as igsession
 import traceback
 import GramAddict
-from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text 
+from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports, generate_report
+from extra.utils.sentry_reporter import init_sentry
 import signal
 import logging
 from adbutils.errors import AdbError
@@ -21,12 +22,8 @@ from dotenv import load_dotenv
 import playground
 load_dotenv(override=True)
 
-import sentry_sdk
-sentry_sdk.init(
-  dsn=os.environ['SENTRY_DSN'],
-  traces_sample_rate=1.0
-)
-sentry_sdk.integrations.logging.ignore_logger(__name__)
+# Initialize Sentry using the sentry_reporter module
+init_sentry(traces_sample_rate=1.0)
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)

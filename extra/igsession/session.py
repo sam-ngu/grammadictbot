@@ -18,23 +18,8 @@ import time
 
 load_dotenv(override=True)
 
-def detect_selfie_challenge(device) -> bool:
-    """Detect if selfie challenge is shown on screen"""
-    selfie_indicators = [
-        "Take a selfie",
-        "take a selfie to verify",
-        "We need to verify it's you",
-        "Verify your identity",
-        "Face verification",
-        "Face scan",
-        "selfie verification",
-        "We need to confirm it's you",
-        "Take a photo of your face",
-    ]
-    for indicator in selfie_indicators:
-        if device.find(text=indicator, className='android.view.View').exists(Timeout.SHORT):
-            return True
-    return False
+# Import challenge handler from challenge.py
+from extra.igsession.challenge import handle_challenge, detect_selfie_challenge
 
 def run_command(cmd: str):
   print('running ', cmd, flush=True)
@@ -325,121 +310,22 @@ def login(ig_username: str):
   print('user entered password', flush=True)
   device.deviceV2.sleep(1)
 
-  # Check for selfie challenge (may appear instead of or before 2FA)
-  if detect_selfie_challenge(device):
-    print('selfie challenge detected after password', flush=True)
-    send_webhook({'event': 'login_selfie_challenge', 'payload': {'message': 'selfie challenge detected after password'}})
-    return 'unable_to_login_due_to_selfie_challenge'
+  # ====================================================================
+  # CHALLENGE HANDLING
+  # All challenge detection and handling logic moved to challenge.py
+  # ====================================================================
 
-  # May get prompt to 'check your notification on another device' for login approval
-  
+  # Use legacy detector by default (proven, tested implementation)
+  # Set use_legacy=False to use new challenge loop architecture
+  challenge_result = handle_challenge(device, ig_username, interval=0.5, use_legacy=True)
 
-  # user may enter wrong password - verify if following is correct
-  # check if wrong password screen, if so send webhook 
-  check_email = device.find(className='android.view.View', text="Check your email")
-  try_another_way = device.find(className='android.view.View', text="Try another way")
+  # If challenge handler returned an error status, return it
+  if challenge_result != 'loggedin':
+    return challenge_result
 
-  # dont click on back button, the ig behaviour is not consistent, better to restart a new machine 
-  print('checking if user entered wrong password', flush=True)
-  is_in_wrong_password_screen = check_email.exists(Timeout.SHORT) or try_another_way.exists(Timeout.SHORT)
-  if is_in_wrong_password_screen:
-    send_webhook({
-      'event': 'login_wrong_password',
-    })
-    print('user entered wrong password', flush=True)
-    raise Exception('user entered wrong password')
-    
-  device.deviceV2.sleep(1)
-
-  # TODO: check for 2fa auth code screen 
-
-  # may see code verify screen
-  #  check if got the send code verify email screen
-  verify_code = device.find(className='android.view.View', text="Confirm it's you")
-  verify_confirm_button = device.find(className='android.view.View', text="Continue")
-
-  timeout = 60 * 10  # 10 min
-  print('checking if user need to enter 2FA code', flush=True)
-  needs_2fa = verify_code.exists(Timeout.MEDIUM)  
-  if needs_2fa:
-    send_webhook({
-      'event': 'login_needs_2fa',
-    })
-
-  # Wait for user to click on continue button
-  while (verify_code.exists(Timeout.TINY) and verify_confirm_button.exists(Timeout.TINY)):
-    device.deviceV2.sleep(interval)
-    timeout -= interval
-    if timeout <= 0:
-      print('timed out waiting for user to proceed with 2fa')
-      return 'timeout'
-    
-  print('user proceed with 2fa to get code', flush=True)
-  send_webhook({
-    'event': 'login_proceed_2fa_get_code',
-  })
-
-  enter_code = device.find(text="Enter confirmation code")
-
-  # check if user clicked on resend code and the Wait a moment modal pops up
-  resend_code_wait_a_moment = device.find(text="Wait a moment")
-  
-  while enter_code.exists(Timeout.TINY) or resend_code_wait_a_moment.exists(Timeout.TINY):
-    device.deviceV2.sleep(interval)
-    timeout -= interval
-    if timeout <= 0:
-      print('timed out waiting for user to enter verification code')
-      return 'timeout'
-  
-  send_webhook({
-    'event': 'login_passed_2fa',
-  })
-  print('passed verification code', flush=True)
-
-  # Check for selfie challenge after 2FA
-  if detect_selfie_challenge(device):
-    print('selfie challenge detected after 2fa', flush=True)
-    send_webhook({'event': 'login_selfie_challenge', 'payload': {'message': 'selfie challenge detected after 2fa'}})
-    return 'unable_to_login_due_to_selfie_challenge'
-
-  # may see suspect screen
-  # check if see suspect automated behaviour on account screen
-  device.deviceV2.sleep(1)
-  is_suspect = device.find(className='android.view.View', text="suspect automated behavior")
-  timeout = 60 * 2  # 2 min
-  print('checking for user to dismiss suspect screen', flush=True)
-  if is_suspect.exists(Timeout.MEDIUM):
-    send_webhook({
-      'event': 'login_suspect_screen',
-    })
-    dismiss_btn = device.find(className='android.view.View', text="Dismiss")
-    dismiss_btn.click()
-
-  device.deviceV2.sleep(1)
-
-  # may see save profile button
-  save_profile_button = device.find(className='android.view.View', text="Save")
-  if save_profile_button.exists(Timeout.MEDIUM):
-    save_profile_button.click_retry(sleep=5, maxretry=3)
-    send_webhook({
-      'event': 'login_saved_profile',
-    })
-  device.deviceV2.sleep(1)
-
-  # Final selfie challenge check before declaring success
-  if detect_selfie_challenge(device):
-    print('selfie challenge detected before login success', flush=True)
-    send_webhook({'event': 'login_selfie_challenge', 'payload': {'message': 'selfie challenge detected final stage'}})
-    return 'unable_to_login_due_to_selfie_challenge'
-
-  # TODO: verify see logged in screen, else throw error? - prob no need, as soon as see the save profile button, we can safely assume the user is logged in 
-  # could either see the save profile button or the logged in screen or the setup new device screen
-  # if see neither, throw error? 
-  # setup_new_device = device.find(className='android.view.View', text="Set up on new device")
-  # allow_button = device.find(className='android.view.View', text="Allow")
-  # if setup_new_device.exists(Timeout.MEDIUM) or allow_button.exists(Timeout.MEDIUM):
-  #   allow_button.click_retry(sleep=5, maxretry=3)
-    
+  # ====================================================================
+  # POST-CHALLENGE SUCCESS
+  # ====================================================================
 
   return 'loggedin'
 
