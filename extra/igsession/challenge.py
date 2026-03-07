@@ -385,14 +385,47 @@ def legacy_challenge_detector(device, ig_username: str, interval: float = 0.5) -
         send_webhook({'event': 'login_selfie_challenge', 'payload': {'message': 'selfie challenge detected final stage'}})
         return 'unable_to_login_due_to_selfie_challenge'
 
-    # TODO: verify see logged in screen, else throw error? - prob no need, as soon as see the save profile button, we can safely assume the user is logged in 
-    # could either see the save profile button or the logged in screen or the setup new device screen
-    # if see neither, throw error? 
-    # setup_new_device = device.find(className='android.view.View', text="Set up on new device")
-    # allow_button = device.find(className='android.view.View', text="Allow")
-    # if setup_new_device.exists(Timeout.MEDIUM) or allow_button.exists(Timeout.MEDIUM):
-    #   allow_button.click_retry(sleep=5, maxretry=3)
-    return 'loggedin'
+    # ==================== 8. Login Success Verification ====================
+    # Verify we are on a known success screen before returning 'loggedin'
+    device.deviceV2.sleep(1)
+
+    # Check for known success indicators
+    tab_bar = device.find(resourceId="com.instagram.android:id/tab_bar")
+    setup_new_device = device.find(className='android.view.View', text="Set up on new device")
+    save_profile_button = device.find(className='android.view.View', text="Save")
+    allow_button = device.find(className='android.view.View', text="Allow")
+
+    is_logged_in_screen = tab_bar.exists(Timeout.MEDIUM)
+    is_setup_new_device = setup_new_device.exists(Timeout.MEDIUM)
+    is_save_profile = save_profile_button.exists(Timeout.MEDIUM)
+    is_allow_button = allow_button.exists(Timeout.MEDIUM)
+
+    # If we see setup new device or allow button, click it
+    if is_setup_new_device or is_allow_button:
+        allow_button.click_retry(sleep=5, maxretry=3)
+        device.deviceV2.sleep(1)
+
+    # Final verification: check if any success indicator is present
+    if is_logged_in_screen or is_setup_new_device or is_save_profile or is_allow_button:
+        print('login success verified', flush=True)
+        return 'loggedin'
+
+    # Unknown scenario - none of the expected success indicators found
+    print('unknown login state - no success indicators found', flush=True)
+    report_challenge_with_screenshot(
+        device=device,
+        challenge_type="unknown_login_state",
+        ig_username=ig_username,
+        stage="final_verification"
+    )
+    send_webhook({
+        'event': 'login_unknown_state',
+        'payload': {
+            'message': 'No known success indicators found after challenge handling'
+        }
+    })
+
+    return 'unable_to_login_due_to_unknown_state'
 
 
 # ============================================================================
