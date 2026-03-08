@@ -58,6 +58,7 @@ class ChallengeType(Enum):
     NEW_DEVICE_REVIEW = "new_device_review"
     SUSPICIOUS_ACTIVITY = "suspicious_activity"
     ACCOUNT_REACTIVATION = "account_reactivation"
+    OTHER_DEVICE_APPROVAL = "other_device_approval"
 
     # Category C: IMPOSSIBLE
     SELFIE = "selfie"
@@ -183,6 +184,12 @@ SCREEN_PATTERNS = {
         "timeout": DEFAULT_REACTIVATION_TIMEOUT,
         "action": "wait_for_reactivation",
     },
+    "OTHER_DEVICE_APPROVAL": {
+        "patterns": ["check your notifications on another device", "waiting for approval", "another device"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_another_device_approval",
+    },
 
     # ==================== Category C: IMPOSSIBLE ====================
     "SELFIE": {
@@ -215,12 +222,12 @@ SCREEN_PATTERNS = {
         "timeout": 0,
         "action": "wrong_password",
     },
-    "WRONG_PASSWORD_TRY_ANOTHER": {
-        "patterns": ["Try another way"],
-        "category": ChallengeCategory.IMPOSSIBLE,
-        "timeout": 0,
-        "action": "wrong_password",
-    },
+    # "WRONG_PASSWORD_TRY_ANOTHER": {
+    #     "patterns": ["Try another way"],
+    #     "category": ChallengeCategory.IMPOSSIBLE,
+    #     "timeout": 0,
+    #     "action": "wrong_password",
+    # },
     "ACCOUNT_SUSPENDED": {
         "patterns": ["account suspended", "temporarily suspended", "suspended for violating"],
         "category": ChallengeCategory.IMPOSSIBLE,
@@ -327,7 +334,7 @@ class ChallengeDetector:
         "AGE_VERIFICATION",
         "PASSWORD_CHANGE",
         "WRONG_PASSWORD_CHECK_EMAIL",
-        "WRONG_PASSWORD_TRY_ANOTHER",
+        # "WRONG_PASSWORD_TRY_ANOTHER",  # Patterns commented out - not implemented
         "ACCOUNT_SUSPENDED",
         "ACCOUNT_DISABLED",
         "ACCOUNT_HACKED",
@@ -347,6 +354,7 @@ class ChallengeDetector:
         "NEW_DEVICE_REVIEW",
         "SUSPICIOUS_ACTIVITY",
         "ACCOUNT_REACTIVATION",
+        "OTHER_DEVICE_APPROVAL",
     ]
 
     def __init__(self, device, ig_username: str, interval: float = 0.5):
@@ -385,7 +393,7 @@ class ChallengeDetector:
                 # CRITICAL: Use className='android.view.View' for Bloks screens
                 # Use Timeout.TINY for fast detection (avoids 20-40 second delays)
                 if self.device.find(textMatches=case_insensitive_re(pattern), className='android.view.View').exists(Timeout.TINY):
-                    logger.info(f"Challenge detected: {challenge_name} (pattern: '{pattern}')")
+                    print(f"Challenge detected: {challenge_name} (pattern: '{pattern}')", flush=True)
                     return ChallengeInfo(
                         challenge_type=ChallengeType[challenge_name],
                         category=config["category"],
@@ -418,7 +426,7 @@ class ChallengeDetector:
                             'button_clicked': btn_text,
                         }
                     })
-                    logger.info(f"Auto-handled consent: clicked {btn_text}")
+                    print(f"Auto-handled consent: clicked {btn_text}", flush=True)
                     return
 
         elif challenge.challenge_type == ChallengeType.TRUSTED_DEVICE:
@@ -434,7 +442,7 @@ class ChallengeDetector:
                             'button_clicked': pattern,
                         }
                     })
-                    logger.info(f"Auto-handled trusted device: clicked {pattern}")
+                    print(f"Auto-handled trusted device: clicked {pattern}", flush=True)
                     return
 
         elif challenge.challenge_type == ChallengeType.SUSPECT_SCREEN:
@@ -446,7 +454,7 @@ class ChallengeDetector:
                     'event': 'login_challenge',
                     'payload': challenge.to_dict()
                 })
-                logger.info("Auto-handled suspect screen: clicked Dismiss")
+                print("Auto-handled suspect screen: clicked Dismiss", flush=True)
                 return
 
         elif challenge.challenge_type == ChallengeType.SAVE_PROFILE:
@@ -458,7 +466,7 @@ class ChallengeDetector:
                     'event': 'login_challenge',
                     'payload': challenge.to_dict()
                 })
-                logger.info("Auto-handled save profile: clicked Save")
+                print("Auto-handled save profile: clicked Save", flush=True)
                 return
 
         elif challenge.challenge_type == ChallengeType.DISMISS_BUTTON:
@@ -469,7 +477,7 @@ class ChallengeDetector:
                     'event': 'login_challenge',
                     'payload': challenge.to_dict()
                 })
-                logger.info("Auto-handled: clicked Dismiss")
+                print("Auto-handled: clicked Dismiss", flush=True)
                 return
 
     def handle_user_wait_challenge(self, challenge: ChallengeInfo) -> str:
@@ -484,7 +492,7 @@ class ChallengeDetector:
         Returns:
             'loggedin' if login successful, 'timeout' if timed out
         """
-        logger.info(f"User-wait challenge detected: {challenge.challenge_type.value}")
+        print(f"User-wait challenge detected: {challenge.challenge_type.value}", flush=True)
 
         # Send webhook notification
         send_webhook({
@@ -497,14 +505,14 @@ class ChallengeDetector:
         while time.time() - start_time < challenge.timeout_seconds:
             # Check if login successful
             if self.is_logged_in():
-                logger.info(f"User completed challenge: {challenge.challenge_type.value}")
+                print(f"User completed challenge: {challenge.challenge_type.value}", flush=True)
                 return 'loggedin'
 
             # Check if challenge still present
             current_challenge = self.detect()
             if current_challenge and current_challenge.challenge_type != challenge.challenge_type:
                 # Different challenge detected - let caller handle it
-                logger.info(f"Challenge changed from {challenge.challenge_type.value} to {current_challenge.challenge_type.value}")
+                print(f"Challenge changed from {challenge.challenge_type.value} to {current_challenge.challenge_type.value}", flush=True)
                 return 'challenge_changed'
 
             time.sleep(self.interval)
