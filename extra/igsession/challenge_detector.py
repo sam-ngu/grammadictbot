@@ -16,6 +16,7 @@ from typing import Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 
 from GramAddict.core.device_facade import Timeout
+from GramAddict.core.views import case_insensitive_re
 from GramAddict.core.webhook import send_webhook
 from extra.utils.sentry_reporter import report_challenge_with_screenshot
 
@@ -293,7 +294,7 @@ def detect_selfie_challenge(device) -> bool:
         "Take a photo of your face",
     ]
     for indicator in selfie_indicators:
-        if device.find(text=indicator, className='android.view.View').exists(Timeout.TINY):
+        if device.find(textMatches=case_insensitive_re(indicator), className='android.view.View').exists(Timeout.TINY):
             return True
     return False
 
@@ -383,7 +384,7 @@ class ChallengeDetector:
             for pattern in patterns:
                 # CRITICAL: Use className='android.view.View' for Bloks screens
                 # Use Timeout.TINY for fast detection (avoids 20-40 second delays)
-                if self.device.find(text=pattern, className='android.view.View').exists(Timeout.TINY):
+                if self.device.find(textMatches=case_insensitive_re(pattern), className='android.view.View').exists(Timeout.TINY):
                     logger.info(f"Challenge detected: {challenge_name} (pattern: '{pattern}')")
                     return ChallengeInfo(
                         challenge_type=ChallengeType[challenge_name],
@@ -407,7 +408,7 @@ class ChallengeDetector:
         if challenge.challenge_type == ChallengeType.CONSENT:
             # Click accept/agree buttons
             for btn_text in ["Accept", "Agree", "I Agree", "Continue", "OK"]:
-                btn = self.device.find(className='android.view.View', text=btn_text)
+                btn = self.device.find(className='android.view.View', textMatches=case_insensitive_re(btn_text))
                 if btn.exists(Timeout.TINY):
                     btn.click()
                     send_webhook({
@@ -423,7 +424,7 @@ class ChallengeDetector:
         elif challenge.challenge_type == ChallengeType.TRUSTED_DEVICE:
             # Click trust/remember device
             for pattern in ["Trust", "Remember", "Don't ask", "Save"]:
-                elem = self.device.find(textContains=pattern, className='android.view.View')
+                elem = self.device.find(textContains=case_insensitive_re(pattern), className='android.view.View')
                 if elem.exists(Timeout.TINY):
                     elem.click()
                     send_webhook({
@@ -438,7 +439,7 @@ class ChallengeDetector:
 
         elif challenge.challenge_type == ChallengeType.SUSPECT_SCREEN:
             # Dismiss suspect automated behavior
-            dismiss_btn = self.device.find(className='android.view.View', text="Dismiss")
+            dismiss_btn = self.device.find(className='android.view.View', textMatches=case_insensitive_re("Dismiss"))
             if dismiss_btn.exists(Timeout.TINY):
                 dismiss_btn.click()
                 send_webhook({
@@ -450,7 +451,7 @@ class ChallengeDetector:
 
         elif challenge.challenge_type == ChallengeType.SAVE_PROFILE:
             # Click Save profile button
-            save_btn = self.device.find(className='android.view.View', text="Save")
+            save_btn = self.device.find(className='android.view.View', textMatches=case_insensitive_re("Save"))
             if save_btn.exists(Timeout.TINY):
                 save_btn.click_retry(sleep=5, maxretry=3)
                 send_webhook({
@@ -461,7 +462,7 @@ class ChallengeDetector:
                 return
 
         elif challenge.challenge_type == ChallengeType.DISMISS_BUTTON:
-            dismiss_btn = self.device.find(className='android.view.View', text="Dismiss")
+            dismiss_btn = self.device.find(className='android.view.View', textMatches=case_insensitive_re("Dismiss"))
             if dismiss_btn.exists(Timeout.TINY):
                 dismiss_btn.click()
                 send_webhook({
