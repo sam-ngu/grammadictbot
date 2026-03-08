@@ -106,6 +106,16 @@ class ChallengeInfo:
     timeout_seconds: int
     action: str = ""
 
+    def to_dict(self) -> dict:
+        """Convert to dict with enum values serialized as strings."""
+        return {
+            'challenge_type': self.challenge_type.value,
+            'category': self.category.value,
+            'patterns_matched': self.patterns_matched,
+            'timeout_seconds': self.timeout_seconds,
+            'action': self.action,
+        }
+
 
 # ============================================================================
 # DETECTION PATTERNS (from CHALLENGE_SCREENS_ANALYSIS.md)
@@ -400,7 +410,13 @@ class ChallengeDetector:
                 btn = self.device.find(className='android.view.View', text=btn_text)
                 if btn.exists(Timeout.TINY):
                     btn.click()
-                    send_webhook({'event': 'login_consent_handled'})
+                    send_webhook({
+                        'event': 'login_challenge',
+                        'payload': {
+                            **challenge.to_dict(),
+                            'button_clicked': btn_text,
+                        }
+                    })
                     logger.info(f"Auto-handled consent: clicked {btn_text}")
                     return
 
@@ -410,7 +426,13 @@ class ChallengeDetector:
                 elem = self.device.find(textContains=pattern, className='android.view.View')
                 if elem.exists(Timeout.TINY):
                     elem.click()
-                    send_webhook({'event': 'login_trusted_device_handled'})
+                    send_webhook({
+                        'event': 'login_challenge',
+                        'payload': {
+                            **challenge.to_dict(),
+                            'button_clicked': pattern,
+                        }
+                    })
                     logger.info(f"Auto-handled trusted device: clicked {pattern}")
                     return
 
@@ -418,8 +440,11 @@ class ChallengeDetector:
             # Dismiss suspect automated behavior
             dismiss_btn = self.device.find(className='android.view.View', text="Dismiss")
             if dismiss_btn.exists(Timeout.TINY):
-                send_webhook({'event': 'login_suspect_screen'})
                 dismiss_btn.click()
+                send_webhook({
+                    'event': 'login_challenge',
+                    'payload': challenge.to_dict()
+                })
                 logger.info("Auto-handled suspect screen: clicked Dismiss")
                 return
 
@@ -428,7 +453,10 @@ class ChallengeDetector:
             save_btn = self.device.find(className='android.view.View', text="Save")
             if save_btn.exists(Timeout.TINY):
                 save_btn.click_retry(sleep=5, maxretry=3)
-                send_webhook({'event': 'login_saved_profile'})
+                send_webhook({
+                    'event': 'login_challenge',
+                    'payload': challenge.to_dict()
+                })
                 logger.info("Auto-handled save profile: clicked Save")
                 return
 
@@ -436,6 +464,10 @@ class ChallengeDetector:
             dismiss_btn = self.device.find(className='android.view.View', text="Dismiss")
             if dismiss_btn.exists(Timeout.TINY):
                 dismiss_btn.click()
+                send_webhook({
+                    'event': 'login_challenge',
+                    'payload': challenge.to_dict()
+                })
                 logger.info("Auto-handled: clicked Dismiss")
                 return
 
@@ -455,12 +487,8 @@ class ChallengeDetector:
 
         # Send webhook notification
         send_webhook({
-            'event': f'login_{challenge.challenge_type.value}',
-            'payload': {
-                'challenge_type': challenge.challenge_type.value,
-                'timeout_seconds': challenge.timeout_seconds,
-                'patterns_matched': challenge.patterns_matched,
-            }
+            'event': 'login_challenge',
+            'payload': challenge.to_dict()
         })
 
         # Wait for user action with timeout
@@ -506,11 +534,8 @@ class ChallengeDetector:
 
         # Send webhook
         send_webhook({
-            'event': f'login_impossible_challenge_{challenge.challenge_type.value}',
-            'payload': {
-                'challenge_type': challenge.challenge_type.value,
-                'patterns_matched': challenge.patterns_matched,
-            }
+            'event': 'login_challenge',
+            'payload': challenge.to_dict()
         })
 
         # Return appropriate error value using the enum method
