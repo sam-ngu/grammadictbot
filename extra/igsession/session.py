@@ -317,7 +317,7 @@ def login(ig_username: str):
 
   # Use legacy detector by default (proven, tested implementation)
   # Set use_legacy=False to use new challenge loop architecture
-  challenge_result = handle_challenge(device, ig_username, interval=0.5, use_legacy=True)
+  challenge_result = handle_challenge(device, ig_username, interval=0.5, use_legacy=False)
 
   # If challenge handler returned an error status, return it
   if challenge_result != 'loggedin':
