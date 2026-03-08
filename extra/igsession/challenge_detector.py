@@ -59,6 +59,7 @@ class ChallengeType(Enum):
     SUSPICIOUS_ACTIVITY = "suspicious_activity"
     ACCOUNT_REACTIVATION = "account_reactivation"
     OTHER_DEVICE_APPROVAL = "other_device_approval"
+    WRONG_PASSWORD_RETRY = "wrong_password_retry"
 
     # Category C: IMPOSSIBLE
     SELFIE = "selfie"
@@ -192,6 +193,13 @@ SCREEN_PATTERNS = {
     },
 
     # ==================== Category C: IMPOSSIBLE ====================
+    # wrong password could happen when user attempted to login via different ip, and ig will not allow access
+    "WRONG_PASSWORD_RETRY": {
+        "patterns": ["the password you entered is incorrect"],
+        "category": ChallengeCategory.IMPOSSIBLE,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_password_retry",
+    },
     "SELFIE": {
         "patterns": ["take a selfie", "video selfie", "face verification", "record a video", "turn your head", "blink"],
         "category": ChallengeCategory.IMPOSSIBLE,
@@ -300,9 +308,8 @@ def detect_selfie_challenge(device) -> bool:
         "We need to confirm it's you",
         "Take a photo of your face",
     ]
-    for indicator in selfie_indicators:
-        if device.find(textMatches=case_insensitive_re(indicator), className='android.view.View').exists(Timeout.ZERO):
-            return True
+    if device.find(textMatches=case_insensitive_re(selfie_indicators), className='android.view.View').exists(Timeout.ZERO):
+        return True
     return False
 
 
@@ -355,6 +362,7 @@ class ChallengeDetector:
         "SUSPICIOUS_ACTIVITY",
         "ACCOUNT_REACTIVATION",
         "OTHER_DEVICE_APPROVAL",
+        "WRONG_PASSWORD_RETRY",
     ]
 
     def __init__(self, device, ig_username: str, interval: float = 0.5):
@@ -390,26 +398,46 @@ class ChallengeDetector:
                 continue
 
             patterns = config.get("patterns", [])
-            for pattern in patterns:
-                # CRITICAL: Use className='android.view.View' for Bloks screens
-                # Use Timeout.TINY for fast detection (avoids 20-40 second delays)
-                if self.device.find(textMatches=case_insensitive_re(pattern), className='android.view.View').exists(Timeout.ZERO):
-                    print(f"Challenge detected: {challenge_name} (pattern: '{pattern}')", flush=True)
-                    return ChallengeInfo(
-                        challenge_type=ChallengeType[challenge_name],
-                        category=config["category"],
-                        patterns_matched=[pattern],
-                        timeout_seconds=config["timeout"],
-                        action=config.get("action", "")
-                    )
+            if self.device.find(textMatches=case_insensitive_re(patterns), className='android.view.View').exists(Timeout.ZERO):
+                print(f"Challenge detected: {challenge_name} (pattern: '{'|'.join(patterns)}')", flush=True)
+                return ChallengeInfo(
+                    challenge_type=ChallengeType[challenge_name],
+                    category=config["category"],
+                    patterns_matched=patterns,
+                    timeout_seconds=config["timeout"],
+                    action=config.get("action", "")
+                )
 
         return None
 
     def is_logged_in(self) -> bool:
-        """Check if login was successful (tab bar present)."""
-        return self.device.find(
-            resourceId="com.instagram.android:id/tab_bar"
-        ).exists(Timeout.TINY)
+        """Check if login was successful by looking for known success indicators.
+
+        Checks for multiple success indicators from the legacy detector:
+        - Tab bar (main indicator)
+        - "Set up on new device" button
+        - "Save" button
+        - "Allow" button
+        """
+        # Primary indicator: tab bar
+        tab_bar = self.device.find(resourceId="com.instagram.android:id/tab_bar")
+        if tab_bar.exists(Timeout.TINY):
+            return True
+
+        # Secondary indicators: these buttons appear on post-login screens
+        setup_new_device = self.device.find(className='android.view.View', text="Set up on new device")
+        if setup_new_device.exists(Timeout.TINY):
+            return True
+
+        save_profile_button = self.device.find(className='android.view.View', text="Save")
+        if save_profile_button.exists(Timeout.TINY):
+            return True
+
+        allow_button = self.device.find(className='android.view.View', text="Allow")
+        if allow_button.exists(Timeout.TINY):
+            return True
+
+        return False
 
     def handle_auto_challenge(self, challenge: ChallengeInfo) -> None:
         """Auto-handle consent, trusted device, suspect, save profile challenges."""
@@ -519,7 +547,7 @@ class ChallengeDetector:
             time.sleep(self.interval)
 
         # Timeout exceeded
-        logger.warning(f"User-wait challenge timed out after {challenge.timeout_seconds}s")
+        print(f"User-wait challenge timed out after {challenge.timeout_seconds}s", flush=True)
         return 'timeout'
 
     def handle_impossible_challenge(self, challenge: ChallengeInfo) -> str:
@@ -528,7 +556,7 @@ class ChallengeDetector:
         Returns:
             Error string indicating the type of failure
         """
-        logger.error(f"Impossible challenge detected: {challenge.challenge_type.value}")
+        print(f"Impossible challenge detected: {challenge.challenge_type.value}", flush=True)
 
         # Capture screenshot and report to Sentry
         report_challenge_with_screenshot(

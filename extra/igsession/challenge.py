@@ -248,6 +248,10 @@ def new_challenge_detector(device, ig_username: str, interval: float = 0.5) -> s
     MAX_TOTAL_TIME = 60 * 20
     start_time = time.time()
 
+    # Track unknown scenario (no challenge detected for extended period)
+    unknown_scenario_start = None
+    UNKNOWN_SCENARIO_THRESHOLD = 30  # seconds
+
     while (time.time() - start_time) < MAX_TOTAL_TIME:
 
         # 1. Check for login success (tab bar present)
@@ -258,9 +262,33 @@ def new_challenge_detector(device, ig_username: str, interval: float = 0.5) -> s
         challenge = detector.detect()
 
         if challenge is None:
-            # No challenge detected, wait briefly and continue
+            # No challenge detected - track duration for unknown scenario detection
+            if unknown_scenario_start is None:
+                unknown_scenario_start = time.time()
+            elif time.time() - unknown_scenario_start > UNKNOWN_SCENARIO_THRESHOLD:
+                # Unknown scenario: no challenge detected for 30+ seconds
+                print(f'unknown scenario detected - no challenge for {UNKNOWN_SCENARIO_THRESHOLD}s', flush=True)
+                report_challenge_with_screenshot(
+                    device=device,
+                    challenge_type="unknown_login_state",
+                    ig_username=ig_username,
+                    stage="no_challenge_detected"
+                )
+                send_webhook({
+                    'event': 'login_unknown_state',
+                    'payload': {
+                        'message': f'No challenge detected for {UNKNOWN_SCENARIO_THRESHOLD} seconds'
+                    }
+                })
+                # Reset timer to avoid repeated reports
+                unknown_scenario_start = time.time()
+                return 'login_unknown_state'
+
             time.sleep(interval)
             continue
+
+        # Reset unknown scenario timer when a challenge is detected
+        unknown_scenario_start = None
 
         # 3. Skip if same challenge (still waiting for user)
         if challenge.challenge_type == detector.last_challenge:
