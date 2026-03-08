@@ -292,8 +292,14 @@ def new_challenge_detector(device, ig_username: str, interval: float = 0.5) -> s
 
         elif challenge.category == ChallengeCategory.USER_WAIT:
             # Category B: Send webhook and wait
-            send_webhook({'event': f'login_{challenge.challenge_type.value}'})
-            # Loop will wait and check for completion
+            result = detector.handle_user_wait_challenge(challenge)
+            if result == 'timeout':
+                return 'timeout'
+            elif result == 'loggedin':
+                return 'loggedin'
+            # result == 'challenge_changed': reset and continue loop to detect new challenge
+            detector.last_challenge = None
+            detector.challenge_start_time = None
             continue
 
     # Total timeout exceeded

@@ -301,7 +301,7 @@ def detect_selfie_challenge(device) -> bool:
         "Take a photo of your face",
     ]
     for indicator in selfie_indicators:
-        if device.find(textMatches=case_insensitive_re(indicator), className='android.view.View').exists(Timeout.TINY):
+        if device.find(textMatches=case_insensitive_re(indicator), className='android.view.View').exists(Timeout.ZERO):
             return True
     return False
 
@@ -384,6 +384,7 @@ class ChallengeDetector:
 
         # Check all patterns in priority order
         for challenge_name in self.CHALLENGE_PRIORITY:
+            print(f'attempting to detect challenge {challenge_name}', flush=True)
             config = SCREEN_PATTERNS.get(challenge_name)
             if not config:
                 continue
@@ -392,7 +393,7 @@ class ChallengeDetector:
             for pattern in patterns:
                 # CRITICAL: Use className='android.view.View' for Bloks screens
                 # Use Timeout.TINY for fast detection (avoids 20-40 second delays)
-                if self.device.find(textMatches=case_insensitive_re(pattern), className='android.view.View').exists(Timeout.TINY):
+                if self.device.find(textMatches=case_insensitive_re(pattern), className='android.view.View').exists(Timeout.ZERO):
                     print(f"Challenge detected: {challenge_name} (pattern: '{pattern}')", flush=True)
                     return ChallengeInfo(
                         challenge_type=ChallengeType[challenge_name],
