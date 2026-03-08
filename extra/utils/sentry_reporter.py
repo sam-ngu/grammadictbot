@@ -195,47 +195,35 @@ def report_to_sentry(
         if capture_screenshot_flag and device:
             actual_screenshot_path = capture_screenshot(device, filename_prefix="sentry", ig_username=context.get("ig_username", "") if context else "")
 
-        # Read screenshot for attachment
-        screenshot_data = None
+        # Get current scope (recommended pattern)
+        scope = sentry_sdk.get_current_scope()
+
+        # Add tags
+        if tags:
+            for key, value in tags.items():
+                scope.set_tag(key, value)
+
+        # Add extras
+        for key, value in extras.items():
+            scope.set_extra(key, value)
+
+        # Add screenshot as attachment if available (use path directly)
         if actual_screenshot_path and os.path.exists(actual_screenshot_path):
-            try:
-                with open(actual_screenshot_path, "rb") as f:
-                    screenshot_data = f.read()
-            except Exception as e:
-                print(f"Failed to read screenshot for attachment: {e}", flush=True)
+            scope.add_attachment(path=actual_screenshot_path)
 
-        # Configure scope with tags and extras
-        with sentry_sdk.configure_scope() as scope:
-            # Add tags
-            if tags:
-                for key, value in tags.items():
-                    scope.set_tag(key, value)
-
-            # Add extras
-            for key, value in extras.items():
-                scope.set_extra(key, value)
-
-            # Add screenshot as attachment if available
-            if screenshot_data:
-                scope.add_attachment(
-                    filename=os.path.basename(actual_screenshot_path),
-                    data=screenshot_data,
-                    content_type="image/png"
-                )
-
-            # Report
-            if exception:
-                sentry_sdk.capture_exception(exception)
-            else:
-                # Map level string to sentry level
-                level_map = {
-                    "debug": "debug",
-                    "info": "info",
-                    "warning": "warning",
-                    "error": "error",
-                    "fatal": "fatal",
-                }
-                sentry_sdk.capture_message(message, level=level_map.get(level, "error"))
+        # Report
+        if exception:
+            sentry_sdk.capture_exception(exception)
+        else:
+            # Map level string to sentry level
+            level_map = {
+                "debug": "debug",
+                "info": "info",
+                "warning": "warning",
+                "error": "error",
+                "fatal": "fatal",
+            }
+            sentry_sdk.capture_message(message, level=level_map.get(level, "error"))
 
         print(f"Reported to Sentry: {message}", flush=True)
         return True
@@ -287,6 +275,7 @@ def report_challenge_with_screenshot(
         tags={
             "challenge_type": challenge_type,
             "username": ig_username,
+            "stage": stage
         }
     )
 

@@ -93,7 +93,7 @@ SCREEN_PATTERNS = {
         "action": "wait_for_code",
     },
     "TWO_FACTOR_SMS": {
-        "patterns": ["sms", "text message", "we sent a code", "verification code", "resend sms", "sent to your phone"],
+        "patterns": ["sms", "text message", "we sent a code", "verification code", "resend sms", "sent a code", "sent to your phone", "SMS", "Check your SMS"],
         "category": ChallengeCategory.USER_WAIT,
         "timeout": 600,
         "action": "wait_for_code",
@@ -295,9 +295,15 @@ def legacy_challenge_detector(device, ig_username: str, interval: float = 0.5) -
     print('checking if user entered wrong password', flush=True)
     is_in_wrong_password_screen = check_email.exists(Timeout.SHORT) or try_another_way.exists(Timeout.SHORT)
     if is_in_wrong_password_screen:
-        send_webhook({'event': 'login_wrong_password'})
-        print('user entered wrong password', flush=True)
-        raise Exception('user entered wrong password')
+        send_webhook({'event': 'login_unknown_state'})
+        print('login unknown state', flush=True)
+        report_challenge_with_screenshot(
+            device=device,
+            challenge_type="unknown_login_state",
+            ig_username=ig_username,
+            stage="after_password"
+        )
+        raise Exception('unknown_login_state')
 
     device.deviceV2.sleep(1)
 
