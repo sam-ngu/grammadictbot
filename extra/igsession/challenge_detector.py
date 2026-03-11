@@ -51,6 +51,9 @@ class ChallengeType(Enum):
     DISMISS_BUTTON = "dismiss_button"
 
     # Category B: USER_WAIT
+    TWO_FACTOR_EMAIL_PHASE1 = "2fa_email_phase1"  # "Confirm it's you" screen
+    TWO_FACTOR_EMAIL_PHASE2 = "2fa_email_phase2"  # "Enter confirmation code" screen
+    TWO_FACTOR_RESEND_WAIT = "2fa_resend_wait"    # "Wait a moment" modal
     TWO_FACTOR_TOTP = "2fa_totp"
     TWO_FACTOR_SMS = "2fa_sms"
     TWO_FACTOR_WHATSAPP = "2fa_whatsapp"
@@ -141,6 +144,27 @@ SCREEN_PATTERNS = {
     },
 
     # ==================== Category B: USER-WAIT ====================
+    "TWO_FACTOR_EMAIL_PHASE1": {
+        # "Confirm it's you" screen - Phase 1 of email 2FA flow
+        "patterns": ["Confirm it's you"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_continue_click",
+    },
+    "TWO_FACTOR_EMAIL_PHASE2": {
+        # "Enter confirmation code" screen - Phase 2 of email 2FA flow
+        "patterns": ["Enter confirmation code"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_code_entry",
+    },
+    "TWO_FACTOR_RESEND_WAIT": {
+        # "Wait a moment" modal - appears when user clicks resend code too quickly
+        "patterns": ["Wait a moment"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": 60,
+        "action": "wait_for_resend_cooldown",
+    },
     "TWO_FACTOR_TOTP": {
         # Authenticator app specific patterns - must NOT match SMS patterns
         "patterns": ["authentication app", "authenticator app", "google authenticator", "verification app", "totp code", "get code from app"],
@@ -354,6 +378,9 @@ class ChallengeDetector:
         "DISMISS_BUTTON",  # Generic dismiss - checked after specific SUSPECT_SCREEN
 
         # Category B: USER_WAIT
+        "TWO_FACTOR_EMAIL_PHASE1",
+        "TWO_FACTOR_EMAIL_PHASE2",
+        "TWO_FACTOR_RESEND_WAIT",
         "TWO_FACTOR_TOTP",
         "TWO_FACTOR_SMS",
         "TWO_FACTOR_WHATSAPP",
