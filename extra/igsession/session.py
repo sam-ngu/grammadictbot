@@ -229,11 +229,19 @@ def login(ig_username: str):
 
   proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
   if proceed_home_screen_button.exists(Timeout.SHORT):
+    print('sees homescreen button', flush=True)
+
     proceed_home_screen_button.click()
     if login_only:
       send_webhook({
         'event': 'login_ig_has_home_screen',
       })
+
+  # cancel button will show when ig is still in loading state
+  cancel_button = device.find(className='android.view.View', text="Cancel")
+
+  while cancel_button.exists(Timeout.TINY):
+    device.deviceV2.sleep(1)
 
   # find login button, if does not exist then user has already logged in 
   login_button = device.find(className='android.view.View', text="Log in")
