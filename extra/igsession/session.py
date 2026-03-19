@@ -227,6 +227,21 @@ def login(ig_username: str):
     # usually because corrupted session in the cloud
     return 'ig_launch_error'
 
+  # cancel button will show when ig is still in loading state
+  cancel_button = device.find(className='android.view.View', text="Cancel")
+
+  # if cancel button exist, then it means ig is still loading
+  while cancel_button.exists(Timeout.MEDIUM):
+    print('cancel button exists before homescreen check means it is loading... sleeping 1s', flush=True)
+    device.deviceV2.sleep(1)
+
+  # Page is not available
+  page_not_available = device.find(className='android.view.View', text="technical error")
+  if page_not_available.exists(Timeout.SHORT):
+    print('page not available, clicking refresh', flush=True)
+    refresh_button = device.find(className='android.view.View', text="Refresh")
+    refresh_button.click()
+
   proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
   if proceed_home_screen_button.exists(Timeout.SHORT):
     print('sees homescreen button', flush=True)
@@ -237,11 +252,14 @@ def login(ig_username: str):
         'event': 'login_ig_has_home_screen',
       })
 
-  # cancel button will show when ig is still in loading state
-  cancel_button = device.find(className='android.view.View', text="Cancel")
-
   while cancel_button.exists(Timeout.TINY):
+    print('cancel button exists before login means it is loading... sleeping 1s', flush=True)
     device.deviceV2.sleep(1)
+
+  if page_not_available.exists(Timeout.SHORT):
+    print('page not available, clicking refresh', flush=True)
+    refresh_button = device.find(className='android.view.View', text="Refresh")
+    refresh_button.click()
 
   # find login button, if does not exist then user has already logged in 
   login_button = device.find(className='android.view.View', text="Log in")
