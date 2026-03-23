@@ -231,7 +231,7 @@ def login(ig_username: str):
   cancel_button = device.find(className='android.view.View', text="Cancel")
 
   # if cancel button exist, then it means ig is still loading
-  while cancel_button.exists(Timeout.MEDIUM):
+  while cancel_button.exists(Timeout.SHORT):
     print('cancel button exists before homescreen check means it is loading... sleeping 1s', flush=True)
     device.deviceV2.sleep(1)
 
@@ -273,6 +273,7 @@ def login(ig_username: str):
   if not login_only:
     return 'invalid_machine_mode'
 
+  editable_text_field = device.find(className='android.widget.EditText', enabled=True)
   username_field = device.find(className='android.widget.EditText', enabled=True, instance=0)
   username_field.set_text(ig_username, mode=Mode.TYPE)
 
@@ -299,10 +300,11 @@ def login(ig_username: str):
   # should wait for 10 min for user to login. Timeout and shutdown if fail to login
   timeout = 60 * 10  # 10 min
   print('checking if login button exists', flush=True)
-  interval = 0.5
+  interval = 1
   wrong_password_modal = device.find(text="Incorrect password")
   unable_to_login_modal = device.find(text="Unable to log in")
-  while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.TINY):
+  wrong_password_notice = device.find(text="The password you entered is incorrect")
+  while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.ZERO) or wrong_password_notice.exists(Timeout.ZERO):
     device.deviceV2.sleep(interval)
     timeout -= interval
     if timeout <= 0:
@@ -310,7 +312,7 @@ def login(ig_username: str):
       return 'timeout'
     # force user to not modify username
     try:
-      if username_field.exists(Timeout.TINY):
+      if username_field.exists(Timeout.TINY) and editable_text_field.count_items() == 2:
         entered_username = username_field.get_text()
         remove_input_methods()
         if entered_username != ig_username:
