@@ -51,6 +51,7 @@ class ChallengeType(Enum):
     DISMISS_BUTTON = "dismiss_button"
 
     # Category B: USER_WAIT
+    CHOOSE_LOGIN_METHOD = "choose_login_method"  # "Choose a way to log in" screen
     TWO_FACTOR_EMAIL_PHASE1 = "2fa_email_phase1"  # "Confirm it's you" screen
     TWO_FACTOR_EMAIL_PHASE2 = "2fa_email_phase2"  # "Enter confirmation code" screen
     TWO_FACTOR_RESEND_WAIT = "2fa_resend_wait"    # "Wait a moment" modal
@@ -144,6 +145,14 @@ SCREEN_PATTERNS = {
     },
 
     # ==================== Category B: USER-WAIT ====================
+    "CHOOSE_LOGIN_METHOD": {
+        # "Choose a way to log in" screen - appears before 2FA code entry
+        # User must select: email code, SMS code, or enter password
+        "patterns": ["Choose a way to log in"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_method_selection",
+    },
     "TWO_FACTOR_EMAIL_PHASE1": {
         # "Confirm it's you" screen - Phase 1 of email 2FA flow
         "patterns": ["Confirm it's you"],
@@ -378,6 +387,7 @@ class ChallengeDetector:
         "DISMISS_BUTTON",  # Generic dismiss - checked after specific SUSPECT_SCREEN
 
         # Category B: USER_WAIT
+        "CHOOSE_LOGIN_METHOD",  # Must come before other 2FA phases (appears first)
         "TWO_FACTOR_EMAIL_PHASE1",
         "TWO_FACTOR_EMAIL_PHASE2",
         "TWO_FACTOR_RESEND_WAIT",

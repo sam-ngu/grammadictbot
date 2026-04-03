@@ -280,9 +280,10 @@ def new_challenge_detector(device, ig_username: str, interval: float = 0.5) -> s
                         'message': f'No challenge detected for {UNKNOWN_SCENARIO_THRESHOLD} seconds'
                     }
                 })
-                # Reset timer to avoid repeated reports
+                # Reset timer to avoid repeated reports, report once every 30 seconds
                 unknown_scenario_start = time.time()
-                return 'login_unknown_state'
+                # should not return here, continue to next iteration, let user decide what to do
+                # return 'login_unknown_state'
 
             time.sleep(interval)
             continue
