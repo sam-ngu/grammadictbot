@@ -181,6 +181,7 @@ def main():
       if result != 'already_logged_in':
         send_need_relogin_webhook('session auth data corrupted in the cloud.')
         shutdown()
+        return
   except Exception as e:
     # send crash event , should retry machine
     print('exception: ', e, flush=True)

@@ -38,6 +38,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
 from dotenv import load_dotenv
+from extra.utils.app_state import AppState
+
 
 load_dotenv(override=True)
 
@@ -300,6 +302,8 @@ def report_exception_with_screenshot(
     Returns:
         bool: True if reported successfully
     """
+    if not ig_username:
+        ig_username = AppState.configyml.get('username')
     context = {
         "ig_username": ig_username,
         "exception_type": type(exception).__name__,

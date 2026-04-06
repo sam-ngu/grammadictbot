@@ -29,6 +29,8 @@ from GramAddict.core.utils import (
     save_crash,
 )
 
+from extra.utils.sentry_reporter import report_exception_with_screenshot
+
 logger = logging.getLogger(__name__)
 
 
@@ -701,6 +703,11 @@ class PostsViewList:
         username, is_ad, is_hashtag = PostsViewList(self.device)._post_owner(
             current_job, Owner.GET_NAME
         )
+        if username is False:
+            logger.info("Can't find the owner name, skip post check.")
+            report_exception_with_screenshot(device=self.device, exception=Exception('Cant find the owner name, skip post check.'))
+            return False, "", "", is_ad, is_hashtag, False
+
         has_tags = self._has_tags()
         while True:
             post_description = self.device.find(

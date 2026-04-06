@@ -8,7 +8,7 @@ from colorama import Fore, Style
 
 from GramAddict import __tested_ig_version__
 from GramAddict.core.config import Config
-from GramAddict.core.device_facade import create_device, get_device_info
+from GramAddict.core.device_facade import create_device, get_device_info, Timeout
 from GramAddict.core.filter import Filter
 from GramAddict.core.filter import load_config as load_filter
 from GramAddict.core.interaction import load_config as load_interaction
@@ -55,6 +55,8 @@ from GramAddict.core.views import load_config as load_views
 from GramAddict.plugins.telegram import telegram_bot_send_text, load_telegram_config
 from extra.utils.webhook_report import WebhookReports
 from extra.utils.app_state import AppState
+from GramAddict.core.webhook import send_webhook
+
 
 def start_bot(**kwargs):
     # Logging initialization
@@ -205,6 +207,20 @@ def start_bot(**kwargs):
         account_view = AccountView(device)
         tab_bar_view = TabBarView(device)
         try:
+            is_logged_out = device.find(className='android.view.View', text="Please log back in.")
+            if is_logged_out.exists(Timeout.SHORT):
+                logger.error("You are logged out. Please log back in.")
+                send_webhook({
+                    'event': 'failed',
+                    'payload': {
+                    'message': 'need_relogin',
+                    'context': 'Sees log out modal. Session auth data corrupted in the cloud.'
+                    }
+                })
+                save_crash(device)
+                device.back()
+                break
+
             account_view.navigate_to_main_account()
             check_if_english(device)
             if configs.args.username is not None:

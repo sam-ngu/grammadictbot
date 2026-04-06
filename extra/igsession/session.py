@@ -242,16 +242,29 @@ def login(ig_username: str):
     refresh_button = device.find(className='android.view.View', text="Refresh")
     refresh_button.click()
 
-  proceed_home_screen_button = device.find(className='android.view.View', text="I already have an account")
-  if proceed_home_screen_button.exists(Timeout.SHORT):
-    print('sees homescreen button', flush=True)
+  homescreen_checks = ["I already have an account", "I already have a profile", "Join Instagram", "Get started"]
+  proceed_home_screen_buttons = [
+    device.find(className='android.view.View', text="I already have an account"),
+    device.find(className='android.view.View', text="I already have a profile"),
+  ]
 
-    proceed_home_screen_button.click()
-    if login_only:
-      send_webhook({
-        'event': 'login_ig_has_home_screen',
-      })
+  for homescreen_check in homescreen_checks:
+    check_element = device.find(className='android.view.View', text=homescreen_check)
+    if check_element.exists(Timeout.SHORT):
+      print('sees homescreen check', flush=True)
+      if not login_only:
+        return 'sees_home_screen'
 
+      for btn in proceed_home_screen_buttons:
+        if btn.exists(Timeout.ZERO):
+          btn.click()
+          if login_only:
+            send_webhook({
+              'event': 'login_ig_has_home_screen',
+            })
+            
+          break
+      
   while cancel_button.exists(Timeout.TINY):
     print('cancel button exists before login means it is loading... sleeping 1s', flush=True)
     device.deviceV2.sleep(1)
