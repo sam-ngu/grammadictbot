@@ -12,6 +12,7 @@ from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from GramAddict.core.session_state import SessionState
 import sentry_sdk
+from extra.utils.sentry_reporter import report_exception_with_screenshot
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ def load_sessions(username) -> Optional[dict]:
         with open(f"accounts/{username}/sessions.json") as json_data:
             return json.load(json_data)
     except FileNotFoundError:
-        print("No session data found. Skipping report generation.", flush=True)
+        print("File not found. No session data found. Skipping report generation.", flush=True)
         return None
 
 
@@ -47,7 +48,10 @@ def generate_report():
     if not session:
         print("No session data found. Skipping report generation.", flush=True)
         # sentry_sdk.set_context("Session state", AppState.session_state)
-        sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
+        if AppState.device:
+            report_exception_with_screenshot(AppState.device, Exception("No session data found. Skipping report generation."))
+        else:
+            sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
         return None
     duration = _calculate_session_duration(session)
     total_followed_num = 0

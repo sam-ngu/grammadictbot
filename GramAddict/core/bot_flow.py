@@ -108,6 +108,7 @@ def start_bot(**kwargs):
         return
     device = create_device(configs.device_id, configs.app_id)
     AppState.session_state = None
+    AppState.device = device
     if str(configs.args.total_sessions) != "-1":
         total_sessions = get_value(configs.args.total_sessions, None, -1)
     else:

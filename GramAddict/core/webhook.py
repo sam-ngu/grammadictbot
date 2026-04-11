@@ -21,9 +21,9 @@ def _get_last_n_lines(filepath, n=20):
         lines = content_bype.decode('utf-8').splitlines()
         return lines[-n:]
     except FileNotFoundError:
-      return []
-    except Exception:
-      return []
+      return ['FILE NOT FOUND ERROR']
+    except Exception as e:
+      return ['Unable to get logs: ' + str(e)]
 
 def send_webhook(payload: dict):
   try:

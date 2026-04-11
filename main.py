@@ -23,7 +23,7 @@ import playground
 load_dotenv(override=True)
 
 # Initialize Sentry using the sentry_reporter module
-init_sentry(traces_sample_rate=1.0)
+init_sentry(traces_sample_rate=1.0, send_default_pii=True)
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
@@ -222,11 +222,14 @@ def main():
     shutdown()
     return
   print('Sending done webhook...', flush=True)
+
+  analytic_report = generate_report()
+
   res = send_webhook({
     'event': 'done',
     'payload': {
       'message': 'Done',
-      'report': generate_report()
+      'report': analytic_report
     }
   })
 
