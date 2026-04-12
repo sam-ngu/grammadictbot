@@ -23,7 +23,7 @@ import playground
 load_dotenv(override=True)
 
 # Initialize Sentry using the sentry_reporter module
-init_sentry(traces_sample_rate=1.0, send_default_pii=True)
+init_sentry(traces_sample_rate=1.0)
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)

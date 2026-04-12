@@ -85,6 +85,8 @@ def init_sentry(traces_sample_rate: float = 1.0) -> bool:
         sentry_sdk.init(
             dsn=sentry_dsn,
             traces_sample_rate=traces_sample_rate,
+            send_default_pii=True,
+            add_full_stack=True
         )
         print("Sentry initialized successfully", flush=True)
         return True
