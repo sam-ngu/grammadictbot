@@ -221,12 +221,12 @@ SCREEN_PATTERNS = {
         "action": "wait_for_reactivation",
     },
     # TODO: uncomment this 
-    # "OTHER_DEVICE_APPROVAL": {
-    #     "patterns": ["check your notifications on another device", "waiting for approval", "another device"],
-    #     "category": ChallengeCategory.USER_WAIT,
-    #     "timeout": DEFAULT_2FA_TIMEOUT,
-    #     "action": "wait_for_another_device_approval",
-    # },
+    "OTHER_DEVICE_APPROVAL": {
+        "patterns": ["check your notifications on another device", "waiting for approval", "another device"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": DEFAULT_2FA_TIMEOUT,
+        "action": "wait_for_another_device_approval",
+    },
 
     # ==================== Category C: IMPOSSIBLE ====================
     # wrong password could happen when user attempted to login via different ip, and ig will not allow access
