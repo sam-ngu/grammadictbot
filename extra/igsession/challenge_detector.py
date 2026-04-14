@@ -10,7 +10,9 @@ Contains:
 """
 
 import time
+import hashlib
 import logging
+import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import Optional, Dict, Any, Tuple
 from dataclasses import dataclass
@@ -218,12 +220,13 @@ SCREEN_PATTERNS = {
         "timeout": DEFAULT_REACTIVATION_TIMEOUT,
         "action": "wait_for_reactivation",
     },
-    "OTHER_DEVICE_APPROVAL": {
-        "patterns": ["check your notifications on another device", "waiting for approval", "another device"],
-        "category": ChallengeCategory.USER_WAIT,
-        "timeout": DEFAULT_2FA_TIMEOUT,
-        "action": "wait_for_another_device_approval",
-    },
+    # TODO: uncomment this 
+    # "OTHER_DEVICE_APPROVAL": {
+    #     "patterns": ["check your notifications on another device", "waiting for approval", "another device"],
+    #     "category": ChallengeCategory.USER_WAIT,
+    #     "timeout": DEFAULT_2FA_TIMEOUT,
+    #     "action": "wait_for_another_device_approval",
+    # },
 
     # ==================== Category C: IMPOSSIBLE ====================
     # wrong password could happen when user attempted to login via different ip, and ig will not allow access
@@ -347,6 +350,42 @@ def detect_selfie_challenge(device) -> bool:
 
 
 # ============================================================================
+# SCREEN HASHING (Unknown Challenge Deduplication)
+# ============================================================================
+
+def get_screen_hash(device) -> Optional[str]:
+    """Hash the normalized view hierarchy XML to identify the current screen.
+
+    Normalization removes volatile content that changes between dumps even
+    when the screen is visually identical:
+    - com.android.systemui nodes (clock, battery, wifi, notifications)
+    - bounds attributes (scroll position changes)
+    - index attributes (ordering changes)
+    Returns None if the dump fails.
+    """
+    try:
+        xml_dump = device.deviceV2.dump_hierarchy()
+        root = ET.fromstring(xml_dump)
+
+        # Remove system UI nodes (clock, battery, wifi, signal, notifications)
+        for parent in root.iter():
+            for child in list(parent):
+                if child.get('package') == 'com.android.systemui':
+                    parent.remove(child)
+
+        # Strip volatile attributes from remaining nodes
+        for node in root.iter():
+            node.attrib.pop('bounds', None)
+            node.attrib.pop('index', None)
+
+        normalized = ET.tostring(root, encoding='unicode')
+        return hashlib.md5(normalized.encode('utf-8')).hexdigest()
+    except Exception as e:
+        logger.debug(f"Failed to get screen hash: {e}")
+        return None
+
+
+# ============================================================================
 # CHALLENGE DETECTOR CLASS (Challenge Loop Architecture)
 # ============================================================================
 
@@ -408,6 +447,7 @@ class ChallengeDetector:
         self.interval = interval
         self.last_challenge = None
         self.challenge_start_time = None
+        self.last_unknown_screen_hash: Optional[str] = None
 
     def detect(self) -> Optional[ChallengeInfo]:
         """

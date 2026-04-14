@@ -21,6 +21,7 @@ from extra.igsession.challenge_detector import (
     SCREEN_PATTERNS,
     TWO_FACTOR_PATTERNS,
     detect_selfie_challenge,
+    get_screen_hash,
 )
 
 
@@ -266,21 +267,30 @@ def new_challenge_detector(device, ig_username: str, interval: float = 0.5) -> s
             if unknown_scenario_start is None:
                 unknown_scenario_start = time.time()
             elif time.time() - unknown_scenario_start > UNKNOWN_SCENARIO_THRESHOLD:
-                # Unknown scenario: no challenge detected for 30+ seconds
-                print(f'unknown scenario detected - no challenge for {UNKNOWN_SCENARIO_THRESHOLD}s', flush=True)
-                report_challenge_with_screenshot(
-                    device=device,
-                    challenge_type="unknown_login_state",
-                    ig_username=ig_username,
-                    stage="no_challenge_detected"
-                )
-                send_webhook({
-                    'event': 'login_unknown_state',
-                    'payload': {
-                        'message': f'No challenge detected for {UNKNOWN_SCENARIO_THRESHOLD} seconds'
-                    }
-                })
-                # Reset timer to avoid repeated reports, report once every 30 seconds
+                current_hash = get_screen_hash(device)
+
+                if current_hash != detector.last_unknown_screen_hash:
+                    # New unknown screen - report it
+                    print(f'unknown scenario detected - no challenge for {UNKNOWN_SCENARIO_THRESHOLD}s (new screen)', flush=True)
+                    report_challenge_with_screenshot(
+                        device=device,
+                        challenge_type="unknown_login_state",
+                        ig_username=ig_username,
+                        stage="no_challenge_detected"
+                    )
+                    send_webhook({
+                        'event': 'login_unknown_state',
+                        'payload': {
+                            'category': 'unknown',
+                            'challenge_type': 'unknown_login_state',
+                            'message': f'No challenge detected for {UNKNOWN_SCENARIO_THRESHOLD} seconds'
+                        }
+                    })
+                    detector.last_unknown_screen_hash = current_hash
+                else:
+                    print(f'same unknown screen, skipping duplicate report (hash={current_hash[:8]})', flush=True)
+
+                # Reset timer
                 unknown_scenario_start = time.time()
                 # should not return here, continue to next iteration, let user decide what to do
                 # return 'login_unknown_state'
