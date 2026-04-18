@@ -1,5 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from GramAddict.core.session_state import SessionState
-from GramAddict.core.device_facade import DeviceFacade
+
+if TYPE_CHECKING:
+    from GramAddict.core.device_facade import DeviceFacade
+
+
 class AppState:
 
   configyml = None
