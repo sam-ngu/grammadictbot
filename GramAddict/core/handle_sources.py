@@ -414,7 +414,11 @@ def handle_likers(
             except DeviceFacade.JsonRpcError as e:
                 # this error will throw when device.back() is not working
                 logger.info(f"JSON RPC Error: {e}", extra={"color": f"{Fore.RED}"})
-                device.back()
+                try:
+                    device.back()
+                except DeviceFacade.JsonRpcError:
+                    logger.debug("device.back() failed in error recovery — re-raising")
+                    raise
             except IndexError:
                 logger.info(
                     "Cannot get next item: probably reached end of the screen.",
@@ -790,8 +794,11 @@ def iterate_over_followers(
                         device.back()
         except DeviceFacade.JsonRpcError as e:
             logger.info(f"DeviceFacade.JsonRpcError: {e}", extra={"color": f"{Fore.RED}"})
-            # TODO: this is not very reliable, find way to accurately determine page position
-            device.back()
+            try:
+                device.back()
+            except DeviceFacade.JsonRpcError:
+                logger.debug("device.back() failed in error recovery — re-raising")
+                raise
         except IndexError:
             logger.info(
                 "Cannot get next item: probably reached end of the screen.",

@@ -5,6 +5,7 @@ from datetime import datetime
 from http.client import HTTPException
 from socket import timeout
 
+import uiautomator2
 from colorama import Fore, Style
 from uiautomator2.exceptions import UiObjectNotFoundError
 
@@ -72,17 +73,22 @@ def run_safely(device, device_id, sessions, session_state, screen_record, config
 
             except (
                 DeviceFacade.JsonRpcError,
+                uiautomator2.JSONRPCError,
                 IndexError,
                 HTTPException,
                 timeout,
                 UiObjectNotFoundError,
             ):
-                restart(
-                    device,
-                    sessions,
-                    session_state,
-                    configs,
-                )
+                try:
+                    restart(
+                        device,
+                        sessions,
+                        session_state,
+                        configs,
+                    )
+                except Exception as restart_error:
+                    logger.error(f"Restart failed after error: {restart_error}")
+                    raise
 
             except Exception as e:
                 # TODO: report to sentry

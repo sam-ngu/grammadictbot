@@ -13,7 +13,7 @@ from typing import Optional
 import uiautomator2
 
 from GramAddict.core.utils import random_sleep
-
+from extra.utils.sentry_reporter import report_exception_with_screenshot
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +129,10 @@ class DeviceFacade:
 
     def back(self, modulable: bool = True):
         logger.debug("Press back button.")
-        self.deviceV2.press("back")
+        try:
+            self.deviceV2.press("back")
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
         random_sleep(modulable=modulable)
 
     def start_screenrecord(self, output="debug_0000.mp4", fps=20):
@@ -178,26 +181,42 @@ class DeviceFacade:
             last_mp4 = mp4_files[-1]
             debug_number = "{0:0=4d}".format(int(last_mp4[-8:-4]) + 1)
             output = f"debug_{debug_number}.mp4"
-        self.deviceV2.screenrecord(output, fps)
+        try:
+            self.deviceV2.screenrecord(output, fps)
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
         logger.warning("Screen recording has been started.")
 
     def stop_screenrecord(self, crash=True):
-        if self.deviceV2.screenrecord.stop(crash=crash):
+        try:
+            stopped = self.deviceV2.screenrecord.stop(crash=crash)
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
+        if stopped:
             logger.warning("Screen recorder has been stopped successfully!")
 
     def screenshot(self, path=None):
-        if path is None:
-            return self.deviceV2.screenshot()
-        else:
-            self.deviceV2.screenshot(path)
+        try:
+            if path is None:
+                return self.deviceV2.screenshot()
+            else:
+                self.deviceV2.screenshot(path)
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
 
     def dump_hierarchy(self, path):
-        xml_dump = self.deviceV2.dump_hierarchy()
+        try:
+            xml_dump = self.deviceV2.dump_hierarchy()
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
         with open(path, "w", encoding="utf-8") as outfile:
             outfile.write(xml_dump)
 
     def press_power(self):
-        self.deviceV2.press("power")
+        try:
+            self.deviceV2.press("power")
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
         sleep(2)
 
     def is_screen_locked(self):
@@ -258,7 +277,10 @@ class DeviceFacade:
             logger.debug(f"Screen locked: {self.is_screen_locked()}")
 
     def screen_off(self):
-        self.deviceV2.screen_off()
+        try:
+            self.deviceV2.screen_off()
+        except uiautomator2.JSONRPCError as e:
+            raise DeviceFacade.JsonRpcError(e)
 
     def get_orientation(self):
         try:
@@ -550,6 +572,7 @@ class DeviceFacade:
                 else:
                     self.viewV2.scroll.toEnd(max_swipes=1)
             except uiautomator2.JSONRPCError as e:
+                report_exception_with_screenshot(self, e)
                 raise DeviceFacade.JsonRpcError(e)
 
         def fling(self, direction):
@@ -570,13 +593,16 @@ class DeviceFacade:
                 if self.viewV2 is None:
                     return False
                 exists: bool = self.viewV2.exists(self.get_ui_timeout(ui_timeout))
+                try:
+                    _count = self.viewV2.count if hasattr(self.viewV2, "count") else 0
+                except uiautomator2.JSONRPCError as e:
+                    raise DeviceFacade.JsonRpcError(e)
                 if (
-                    hasattr(self.viewV2, "count")
-                    and not exists
-                    and self.viewV2.count >= 1
+                    not exists
+                    and _count >= 1
                 ):
                     logger.debug(
-                        f"UIA2 BUG: exists return False, but there is/are {self.viewV2.count} element(s)!"
+                        f"UIA2 BUG: exists return False, but there is/are {_count} element(s)!"
                     )
                     if ignore_bug:
                         return "BUG!"
