@@ -291,13 +291,16 @@ def login(ig_username: str):
   username_field.set_text(ig_username, mode=Mode.TYPE)
 
   # focusing on password field
+  password = os.environ.get('IG_PASSWORD')
   password_field = device.find(className='android.widget.EditText', enabled=True, instance=1)
-  password_field.set_text('', mode=Mode.TYPE)
+  password_field.set_text(password, mode=Mode.TYPE)
+
+  login_button.click()
 
   # hide keyboard so we know exactly what px to hide in IG UI
-  device.deviceV2.sleep(1)
+  # device.deviceV2.sleep(1)
   remove_input_methods()
-  device.deviceV2.sleep(1)
+  # device.deviceV2.sleep(1)
 
   res = send_webhook({
     'event': 'login_ready',
@@ -310,37 +313,39 @@ def login(ig_username: str):
     # sys.exit(0)
     return
 
-  # should wait for 10 min for user to login. Timeout and shutdown if fail to login
-  timeout = 60 * 10  # 10 min
-  print('checking if login button exists', flush=True)
-  interval = 1
+  # new flow as of 7 May 2026, login for user, no longer require user to tap on login button
+
+  # # should wait for 10 min for user to login. Timeout and shutdown if fail to login
+  # timeout = 60 * 10  # 10 min
+  # print('checking if login button exists', flush=True)
+  # interval = 1
   wrong_password_modal = device.find(text="Incorrect password")
   unable_to_login_modal = device.find(text="Unable to log in")
   wrong_password_notice = device.find(text="The password you entered is incorrect")
-  while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.ZERO) or wrong_password_notice.exists(Timeout.ZERO):
-    device.deviceV2.sleep(interval)
-    timeout -= interval
-    if timeout <= 0:
-      print('timed out waiting for user to login', flush=True)
-      return 'timeout'
-    # force user to not modify username
-    try:
-      if username_field.exists(Timeout.TINY) and editable_text_field.count_items() == 2:
-        entered_username = username_field.get_text()
-        remove_input_methods()
-        if entered_username != ig_username:
-          print('user entered wrong username', flush=True)
-          username_field.set_text(ig_username, mode=Mode.TYPE)
-          remove_input_methods()
-          send_webhook({
-            'event': 'login_username_modified',
-          })
-    except Exception as e:
-      # this may happen once moved passed login screen, ignore
-      print('except in login block: ',e, flush=True)
-      pass
+  # while login_button.exists(Timeout.TINY) or wrong_password_modal.exists(Timeout.ZERO) or wrong_password_notice.exists(Timeout.ZERO):
+  #   device.deviceV2.sleep(interval)
+  #   timeout -= interval
+  #   if timeout <= 0:
+  #     print('timed out waiting for user to login', flush=True)
+  #     return 'timeout'
+  #   # force user to not modify username
+  #   try:
+  #     if username_field.exists(Timeout.TINY) and editable_text_field.count_items() == 2:
+  #       entered_username = username_field.get_text()
+  #       remove_input_methods()
+  #       if entered_username != ig_username:
+  #         print('user entered wrong username', flush=True)
+  #         username_field.set_text(ig_username, mode=Mode.TYPE)
+  #         remove_input_methods()
+  #         send_webhook({
+  #           'event': 'login_username_modified',
+  #         })
+  #   except Exception as e:
+  #     # this may happen once moved passed login screen, ignore
+  #     print('except in login block: ',e, flush=True)
+  #     pass
   
-  if unable_to_login_modal.exists(Timeout.SHORT):
+  if unable_to_login_modal.exists(Timeout.SHORT) or wrong_password_modal.exists(Timeout.ZERO) or wrong_password_notice.exists(Timeout.ZERO):
     print('unable to login', flush=True)
     # when this happens, its most likely ig has blocked the login attempt, due to suspicious location. Australian ip tends to do this
     return 'unable_to_login_due_to_unknown_error'
