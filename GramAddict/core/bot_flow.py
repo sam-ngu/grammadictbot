@@ -98,6 +98,7 @@ def start_bot(**kwargs):
     load_utils(configs)
     load_views(configs)
 
+    # check adb connection might return false, need to reinit adb if falsey
     if not configs.args or not check_adb_connection():
         return
 

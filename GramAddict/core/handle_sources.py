@@ -2,6 +2,7 @@ import logging
 import os
 from functools import partial
 from os import path
+import uiautomator2
 
 from atomicwrites import atomic_write
 from colorama import Fore
@@ -13,6 +14,7 @@ from GramAddict.core.navigation import (
     nav_to_hashtag_or_place,
     nav_to_post_likers,
 )
+from extra.utils.sentry_reporter import report_exception_with_screenshot
 from GramAddict.core.resources import ClassName
 from GramAddict.core.storage import FollowingStatus
 from GramAddict.core.utils import (
@@ -411,11 +413,12 @@ def handle_likers(
                         opened = True
                         logger.info("Back to likers list.")
                         device.back()
-            except DeviceFacade.JsonRpcError as e:
+            except (DeviceFacade.JsonRpcError, uiautomator2.exceptions.UiObjectNotFoundError) as e:
                 # this error will throw when device.back() is not working
                 logger.info(f"JSON RPC Error: {e}", extra={"color": f"{Fore.RED}"})
                 try:
                     device.back()
+                    break
                 except DeviceFacade.JsonRpcError:
                     logger.debug("device.back() failed in error recovery — re-raising")
                     raise
@@ -443,18 +446,31 @@ def handle_likers(
                 logger.info("Going to the next post.")
                 PostsViewList(device).swipe_to_fit_posts(SwipeTo.NEXT_POST)
                 break
-            if posts_end_detector.is_fling_limit_reached():
+            try:
+                if posts_end_detector.is_fling_limit_reached():
+                    logger.info(
+                        "Reached fling limit. Fling to see other likers.",
+                        extra={"color": f"{Fore.GREEN}"},
+                    )
+                    likes_list_view.fling(Direction.DOWN)
+                else:
+                    logger.info(
+                        "Scroll to see other likers.",
+                        extra={"color": f"{Fore.GREEN}"},
+                    )
+                    likes_list_view.scroll(Direction.DOWN)
+            except Exception as e:
+                report_exception_with_screenshot(device, e)
+                # sometimes we may not able to see the liker list. and will throw json rpc error here
+                # so we will go back and try next post, otherwise app will crash
                 logger.info(
-                    "Reached fling limit. Fling to see other likers.",
-                    extra={"color": f"{Fore.GREEN}"},
+                    f"Error while scrolling to see other likers: {e}",
+                    extra={"color": f"{Fore.RED}"},
                 )
-                likes_list_view.fling(Direction.DOWN)
-            else:
-                logger.info(
-                    "Scroll to see other likers.",
-                    extra={"color": f"{Fore.GREEN}"},
-                )
-                likes_list_view.scroll(Direction.DOWN)
+                device.back()
+                logger.info("Going to the next post.")
+                PostsViewList(device).swipe_to_fit_posts(SwipeTo.NEXT_POST)
+                break
 
             prev_screen_iterated_likers.clear()
             prev_screen_iterated_likers += screen_iterated_likers
@@ -833,60 +849,73 @@ def iterate_over_followers(
                     className=ClassName.LIST_VIEW,
                 )
 
-            if is_myself:
-                logger.info("Need to scroll now", extra={"color": f"{Fore.GREEN}"})
-                list_view.scroll(Direction.UP)
-            else:
-                pressed_retry = False
-                if load_more_button_exists:
-                    retry_button = load_more_button.child(
-                        className=ClassName.IMAGE_VIEW,
-                        descriptionMatches=case_insensitive_re("Retry"),
-                    )
-                    if retry_button.exists():
-                        random_sleep()
-                        """It exist but can disappear without pressing on it"""
-                        if retry_button.exists():
-                            logger.info('Press "Load" button and wait few seconds.')
-                            retry_button.click_retry()
-                            random_sleep(5, 10, modulable=False)
-                            pressed_retry = True
-
-                if need_swipe and not pressed_retry:
-                    scroll_end_detector.notify_skipped_all()
-                    if scroll_end_detector.is_skipped_limit_reached():
-                        return
-                    if scroll_end_detector.is_fling_limit_reached():
-                        logger.info(
-                            "Limit of all followers skipped reached, let's fling.",
-                            extra={"color": f"{Fore.GREEN}"},
-                        )
-                        list_view.fling(Direction.DOWN)
-                    else:
-                        logger.info(
-                            "All followers skipped, let's scroll.",
-                            extra={"color": f"{Fore.GREEN}"},
-                        )
-                        list_view.scroll(Direction.DOWN)
-                else:
+            try:
+                if is_myself:
                     logger.info("Need to scroll now", extra={"color": f"{Fore.GREEN}"})
+                    list_view.scroll(Direction.UP)
+                else:
+                    pressed_retry = False
+                    if load_more_button_exists:
+                        retry_button = load_more_button.child(
+                            className=ClassName.IMAGE_VIEW,
+                            descriptionMatches=case_insensitive_re("Retry"),
+                        )
+                        if retry_button.exists():
+                            random_sleep()
+                            """It exist but can disappear without pressing on it"""
+                            if retry_button.exists():
+                                logger.info('Press "Load" button and wait few seconds.')
+                                retry_button.click_retry()
+                                random_sleep(5, 10, modulable=False)
+                                pressed_retry = True
 
-                    list_view.scroll(Direction.DOWN)
+                    if need_swipe and not pressed_retry:
+                        scroll_end_detector.notify_skipped_all()
+                        if scroll_end_detector.is_skipped_limit_reached():
+                            return
+                        if scroll_end_detector.is_fling_limit_reached():
+                            logger.info(
+                                "Limit of all followers skipped reached, let's fling.",
+                                extra={"color": f"{Fore.GREEN}"},
+                            )
+                            list_view.fling(Direction.DOWN)
+                        else:
+                            logger.info(
+                                "All followers skipped, let's scroll.",
+                                extra={"color": f"{Fore.GREEN}"},
+                            )
+                            list_view.scroll(Direction.DOWN)
+                    else:
+                        logger.info("Need to scroll now", extra={"color": f"{Fore.GREEN}"})
 
-                    # the following is on needed for shitty machine like google cloud where there is
-                    # an unexpected behaviour that scroll all the way to the top when the bot returns
-                    # to the follower list
-                    # there is no need for digital ocean machine. 
+                        list_view.scroll(Direction.DOWN)
 
-                    # # scroll up offset to fully reveal the search bar if exist
-                    # list_view.scroll(Direction.UP)
-                    # # check if at top, if yes scroll all the way to bottom, else continue
-                    # if scrolled_to_top():
-                    #     list_view.viewV2.fling.toEnd()
-                    # else:
-                    #     # resume offset
-                    #     list_view.scroll(Direction.DOWN)
-                    # # device.swipe(direction=Direction.UP, scale=0.9)
+                        # the following is on needed for shitty machine like google cloud where there is
+                        # an unexpected behaviour that scroll all the way to the top when the bot returns
+                        # to the follower list
+                        # there is no need for digital ocean machine. 
+
+                        # # scroll up offset to fully reveal the search bar if exist
+                        # list_view.scroll(Direction.UP)
+                        # # check if at top, if yes scroll all the way to bottom, else continue
+                        # if scrolled_to_top():
+                        #     list_view.viewV2.fling.toEnd()
+                        # else:
+                        #     # resume offset
+                        #     list_view.scroll(Direction.DOWN)
+                        # # device.swipe(direction=Direction.UP, scale=0.9)
+            except (DeviceFacade.JsonRpcError, uiautomator2.JSONRPCError) as e:
+                report_exception_with_screenshot(device, e)
+                device.back()
+                if not device.find(
+                    resourceId=self.ResourceID.FOLLOW_LIST_CONTAINER,
+                    className=ClassName.LINEAR_LAYOUT,
+                ).exists(Timeout.SHORT):
+                    logger.warning(
+                        "device.back() navigated away from followers list. Aborting iteration.",
+                        extra={"color": f"{Fore.RED}"},
+                    )
+                    return
 
         else:
             logger.info(

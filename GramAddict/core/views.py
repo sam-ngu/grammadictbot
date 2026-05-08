@@ -456,6 +456,8 @@ class SearchView:
         return False
 
 
+MAX_LIKE_CHECK_RECURSION = 5
+
 class PostsViewList:
     def __init__(self, device: DeviceFacade):
         self.device = device
@@ -972,7 +974,7 @@ class PostsViewList:
         logger.info("Open comments of post.")
         self.device.find(resourceIdMatches=ResourceID.ROW_FEED_BUTTON_COMMENT).click()
 
-    def _check_if_liked(self):
+    def _check_if_liked(self, _depth: int = 0):
         logger.debug("Check if like succeeded in post view.")
         bnt_like_obj = self.device.find(
             resourceIdMatches=ResourceID.ROW_FEED_BUTTON_LIKE
@@ -986,10 +988,26 @@ class PostsViewList:
                 logger.debug("Like is not present.")
                 return False
         else:
+            if _depth >= MAX_LIKE_CHECK_RECURSION:
+                logger.warning(
+                    f"Like button not found after {MAX_LIKE_CHECK_RECURSION} swipes. Giving up."
+                )
+                try:
+                    from extra.utils.sentry_reporter import report_exception_with_screenshot
+                    report_exception_with_screenshot(
+                        device=self.device,
+                        exception=RecursionError(
+                            f"_check_if_liked recursed {MAX_LIKE_CHECK_RECURSION} times without finding like button"
+                        ),
+                        additional_context={"method": "_check_if_liked", "depth": _depth},
+                    )
+                except Exception:
+                    logger.debug("Sentry report failed.", exc_info=True)
+                return False
             UniversalActions(self.device)._swipe_points(
                 direction=Direction.DOWN, delta_y=100
             )
-            return PostsViewList(self.device)._check_if_liked()
+            return PostsViewList(self.device)._check_if_liked(_depth=_depth + 1)
 
     def _check_if_ad_or_hashtag(
         self, post_owner_obj
@@ -1504,9 +1522,7 @@ class ProfileView(ActionBarView):
         )
         if not watching_stories and action_bar.exists(Timeout.LONG) or watching_stories:
             return action_bar
-        logger.error(
-            "Unable to find action bar! (The element with the username at top)"
-        )
+        report_exception_with_screenshot(self.device, RuntimeError("Unable to find action bar! (The element with the username at top)"))
         return None
 
     def _getSomeText(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:

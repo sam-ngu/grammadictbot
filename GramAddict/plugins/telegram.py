@@ -218,6 +218,8 @@ class TelegramReports(Plugin):
         ]
 
     def run(self, config, plugin, followers_now, following_now, time_left):
+        # not running this on prod for now
+        return 
         username = config.args.username
         if username is None:
             logger.error("You have to specify a username for getting reports!")

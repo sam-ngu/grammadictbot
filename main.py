@@ -13,7 +13,7 @@ from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports, generate_report
-from extra.utils.sentry_reporter import init_sentry
+from extra.utils.sentry_reporter import init_sentry, report_exception_with_screenshot
 import signal
 import logging
 from adbutils.errors import AdbError
@@ -217,6 +217,9 @@ def main():
       'event': 'failed',
       'payload': payload
     })
+    if AppState.device:
+      report_exception_with_screenshot(AppState.device, e)
+
     shutdown()
     return
   print('Sending done webhook...', flush=True)
