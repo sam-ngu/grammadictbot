@@ -815,6 +815,15 @@ def iterate_over_followers(
             except DeviceFacade.JsonRpcError:
                 logger.debug("device.back() failed in error recovery — re-raising")
                 raise
+            if not device.find(
+                resourceId=self.ResourceID.FOLLOW_LIST_CONTAINER,
+                className=ClassName.LINEAR_LAYOUT,
+            ).exists(Timeout.SHORT):
+                logger.warning(
+                    "No longer on followers list after error recovery. Aborting iteration.",
+                    extra={"color": f"{Fore.RED}"},
+                )
+                return
         except IndexError:
             logger.info(
                 "Cannot get next item: probably reached end of the screen.",
@@ -850,6 +859,12 @@ def iterate_over_followers(
                 )
 
             try:
+                if not list_view.exists(Timeout.SHORT):
+                    logger.warning(
+                        "List view disappeared before scroll. Aborting.",
+                        extra={"color": f"{Fore.RED}"},
+                    )
+                    return
                 if is_myself:
                     logger.info("Need to scroll now", extra={"color": f"{Fore.GREEN}"})
                     list_view.scroll(Direction.UP)
