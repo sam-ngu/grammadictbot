@@ -228,10 +228,11 @@ def handle_blogger_from_file(
                     if need_to_refresh:
                         search_view = TabBarView(device).navigateToSearch()
                     profile_view = search_view.navigate_to_target(username, current_job)
-                    need_to_refresh = False
                     if not profile_view:
                         not_found.append(username_raw)
+                        need_to_refresh = True
                         continue
+                    need_to_refresh = False
 
                     if not interact(
                         storage=storage,

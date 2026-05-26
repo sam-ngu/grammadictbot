@@ -24,7 +24,10 @@ from GramAddict.core.resources import TabBarText
 from GramAddict.core.utils import (
     ActionBlockedError,
     Square,
+    check_if_crash_popup_is_there,
+    close_instagram,
     get_value,
+    open_instagram,
     random_sleep,
     save_crash,
 )
@@ -418,10 +421,24 @@ class SearchView:
         if echo_text.exists(Timeout.SHORT):
             logger.debug("Pressing on see all results.")
             echo_text.click()
-        # at this point we have the tabs available
-        self._switch_to_target_tag(job)
-        if self._check_current_view(target, job, in_place_tab=True):
-            return True
+            # wait for tabs to load completely
+            random_sleep(1, 2)
+        try:
+            # at this point we have the tabs available
+            self._switch_to_target_tag(job)
+            if self._check_current_view(target, job, in_place_tab=True):
+                return True
+        except DeviceFacade.AppHasCrashed:
+            logger.info(
+                f"@{target}: Instagram crashed during search — "
+                f"user likely doesn't exist. Restarting IG."
+            )
+            close_instagram(self.device)
+            check_if_crash_popup_is_there(self.device)
+            random_sleep()
+            open_instagram(self.device)
+            TabBarView(self.device).navigateToProfile()
+            return False
         return False
 
     def _switch_to_target_tag(self, job: str):
