@@ -3,11 +3,13 @@ from pathlib import Path
 import GramAddict
 from GramAddict.core.device_facade import create_device, Mode, Timeout
 from GramAddict.core.utils import load_config
-from GramAddict.core.resources import ResourceID as resources
+from GramAddict.core.resources import ResourceID as resources, ClassName
 # from GramAddict.core.resources import ClassName
 from GramAddict.core.config import Config
 import subprocess
 from extra.igsession.session import storage_client
+from GramAddict.core.device_facade import Direction
+from GramAddict.core.views import case_insensitive_re
 import os
 
 def run_command(cmd: str):
@@ -53,7 +55,33 @@ def main():
 
   resend_code = device.find(text="Wait a moment")
 
-  print('resend_code', resend_code.exists(Timeout.SHORT), flush=True)
+  # print('resend_code', resend_code.exists(Timeout.SHORT), flush=True)
+
+  # search_list_view = device.find(
+  #     resourceId=ResourceID.ACTION_BAR_ROOT, className=ClassName.LINEAR_LAYOUT
+  # )
+  # search_list_view.viewV2.fling.toEnd()
+  # search_list_view.scroll(Direction.DOWN)
+  # device.swipe(direction=Direction.DOWN)
+  # hierachy = device.dump_hierarchy()
+  # xml_dump = device.deviceV2.dump_hierarchy()
+
+  # print(xml_dump, flush=True)
+
+  tab_layout = device.find(
+      resourceIdMatches=case_insensitive_re(
+          ResourceID.VIEW_SWITCHER_CONTAINER
+      ),
+  )
+
+  print('tab_layout', tab_layout.exists(Timeout.SHORT), flush=True)
+
+  tab_text_view = tab_layout.child(
+      # resourceIdMatches=case_insensitive_re(ResourceID.TAB_BUTTON_NAME_TEXT),
+      textMatches=case_insensitive_re('TAGS'),
+  )
+
+  print('tab_text_view', tab_text_view.exists(Timeout.SHORT), flush=True)
 
   # check_email = device.find(className='android.view.View', text="Check your email")
   # try_another_way = device.find(className='android.view.View', text="Try another way")

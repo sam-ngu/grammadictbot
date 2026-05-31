@@ -33,6 +33,7 @@ from GramAddict.core.utils import (
 )
 
 from extra.utils.sentry_reporter import report_exception_with_screenshot
+from GramAddict.core.webhook import send_webhook
 
 logger = logging.getLogger(__name__)
 
@@ -347,13 +348,14 @@ class SearchView:
     def _getTabTextView(self, tab: SearchTabs):
         tab_layout = self.device.find(
             resourceIdMatches=case_insensitive_re(
-                ResourceID.FIXED_TABBAR_TABS_CONTAINER
+                ResourceID.VIEW_SWITCHER_CONTAINER
             ),
         )
         if tab_layout.exists():
             logger.debug("Tabs container exists!")
             tab_text_view = tab_layout.child(
-                resourceIdMatches=case_insensitive_re(ResourceID.TAB_BUTTON_NAME_TEXT),
+                # all the tabs buttons do not have a resource id, i've checked the hierachy as of 2026-05-31
+                # resourceIdMatches=case_insensitive_re(ResourceID.TAB_BUTTON_NAME_TEXT),
                 textMatches=case_insensitive_re(tab.name),
             )
             if not tab_text_view.exists():
@@ -417,6 +419,11 @@ class SearchView:
         if self._check_current_view(target, job):
             logger.info(f"{target} is in top view.")
             return True
+        # we will scroll to the end of the list to get to the see all result button
+        search_list_view = self.device.find(
+            resourceId=ResourceID.ACTION_BAR_ROOT, className=ClassName.LINEAR_LAYOUT
+        )
+        search_list_view.viewV2.fling.toEnd()
         echo_text = self.device.find(resourceId=ResourceID.ECHO_TEXT)
         if echo_text.exists(Timeout.SHORT):
             logger.debug("Pressing on see all results.")
@@ -428,6 +435,17 @@ class SearchView:
             self._switch_to_target_tag(job)
             if self._check_current_view(target, job, in_place_tab=True):
                 return True
+            else:
+                # send webhook to tell user that target not found
+                message = job + " " + target + " not found."
+                send_webhook({
+                    "event": "invalid_target",
+                    "payload": {
+                        "message": message,
+                        "job": job,
+                        "target": target
+                    }
+                })
         except DeviceFacade.AppHasCrashed:
             logger.info(
                 f"@{target}: Instagram crashed during search — "

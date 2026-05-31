@@ -274,8 +274,11 @@ if __name__ == "__main__":
   # signal cant handle SIGKILL, SIGKILL is not meant for gracefull shutdown
   # signal.signal(signal.SIGKILL, graceful_shutdown)
 
-  if os.environ.get('DEV_MODE') == 'True':
-    playground_dev()
-    sys.exit(0)
+  # When activating DEV_MODE, comment out the following in the first run to run the main session first, 
+  # the main session should stop running once launch the ig app
+  # then we can run our custom code in playground_dev() for testing and debugging 
+  # if os.environ.get('DEV_MODE') == 'True':
+  #   playground_dev()
+  #   sys.exit(0)
 
   main()
