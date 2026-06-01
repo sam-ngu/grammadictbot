@@ -38,14 +38,7 @@ class InteractHashtagLikers(Plugin):
                 "default": None,
                 "operation": True,
             },
-            {
-                "arg": "--hashtag-likers-recent",
-                "nargs": "+",
-                "help": "list of hashtags in recent results with whose likers you want to interact",
-                "metavar": ("hashtag1", "hashtag2"),
-                "default": None,
-                "operation": True,
-            },
+            # --hashtag-likers-recent removed 2026-06: Instagram removed Recent tab from hashtag pages
         ]
 
     def run(self, device, configs, storage, sessions, profile_filter, plugin):
@@ -62,13 +55,10 @@ class InteractHashtagLikers(Plugin):
         self.current_mode = plugin
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
+        # recent branch removed 2026-06: Instagram removed Recent tab from hashtag pages
         sources = [
             source
-            for source in (
-                self.args.hashtag_likers_top
-                if self.current_mode == "hashtag-likers-top"
-                else self.args.hashtag_likers_recent
-            )
+            for source in self.args.hashtag_likers_top
         ]
         # Start
         for source in sample_sources(sources, self.args.truncate_sources):

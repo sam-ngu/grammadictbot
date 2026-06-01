@@ -65,7 +65,7 @@ class SearchTabs(Enum):
     TOP = auto()
     ACCOUNTS = auto()
     TAGS = auto()
-    PLACES = auto()
+    # PLACES removed 2026-06: Instagram removed Places tab from search
 
 
 class FollowStatus(Enum):
@@ -249,55 +249,8 @@ class HashTagView:
             logger.debug("First image in view doesn't exists.")
         return obj
 
-    def _getRecentTab(self):
-        obj = self.device.find(
-            className=ClassName.TEXT_VIEW,
-            textMatches=case_insensitive_re(TabBarText.RECENT_CONTENT_DESC),
-        )
-        if obj.exists(Timeout.LONG):
-            logger.debug("Recent Tab exists.")
-        else:
-            logger.debug("Recent Tab doesn't exists.")
-        return obj
-
-
-# The place view for the moment It's only a copy/paste of HashTagView
-# Maybe we can add the com.instagram.android:id/category_name == "Country/Region" (or other obv)
-
-
-class PlacesView:
-    def __init__(self, device: DeviceFacade):
-        self.device = device
-
-    def _getRecyclerView(self):
-        obj = self.device.find(resourceIdMatches=ResourceID.RECYCLER_VIEW)
-        if obj.exists(Timeout.LONG):
-            logger.debug("RecyclerView exists.")
-        else:
-            logger.debug("RecyclerView doesn't exists.")
-        return obj
-
-    def _getFistImageView(self, recycler):
-        obj = recycler.child(
-            resourceIdMatches=ResourceID.IMAGE_BUTTON,
-        )
-        if obj.exists(Timeout.LONG):
-            logger.debug("First image in view exists.")
-        else:
-            logger.debug("First image in view doesn't exists.")
-        return obj
-
-    def _getRecentTab(self):
-        return self.device.find(
-            className=ClassName.TEXT_VIEW,
-            textMatches=case_insensitive_re(TabBarText.RECENT_CONTENT_DESC),
-        )
-
-    def _getInformBody(self):
-        return self.device.find(
-            className=ClassName.TEXT_VIEW,
-            resourceId=ResourceID.INFORM_BODY,
-        )
+    # _getRecentTab removed 2026-06: Instagram removed Recent tab from hashtag pages
+    # PlacesView removed 2026-06: Instagram removed Places tab from search
 
 
 class SearchView:
@@ -338,12 +291,7 @@ class SearchView:
             text=f"#{hashtag}",
         )
 
-    def _getPlaceRow(self):
-        obj = self.device.find(
-            resourceIdMatches=case_insensitive_re(ResourceID.ROW_PLACE_TITLE),
-        )
-        obj.wait(Timeout.MEDIUM)
-        return obj
+    # _getPlaceRow removed 2026-06: Instagram removed Places tab from search
 
     def _getTabTextView(self, tab: SearchTabs):
         tab_layout = self.device.find(
@@ -460,9 +408,8 @@ class SearchView:
         return False
 
     def _switch_to_target_tag(self, job: str):
-        if "place" in job:
-            tab = SearchTabs.PLACES
-        elif "hashtag" in job:
+        # place branch removed 2026-06: Instagram removed Places tab from search
+        if "hashtag" in job:
             tab = SearchTabs.TAGS
         else:
             tab = SearchTabs.ACCOUNTS
@@ -475,16 +422,11 @@ class SearchView:
     def _check_current_view(
         self, target: str, job: str, in_place_tab: bool = False
     ) -> bool:
-        if "place" in job:
-            if not in_place_tab:
-                return False
-            else:
-                obj = self._getPlaceRow()
-        else:
-            obj = self.device.find(
-                text=target,
-                resourceIdMatches=ResourceID.SEARCH_ROW_ITEM,
-            )
+        # place branch removed 2026-06: Instagram removed Places tab from search
+        obj = self.device.find(
+            text=target,
+            resourceIdMatches=ResourceID.SEARCH_ROW_ITEM,
+        )
         if obj.exists():
             obj.click()
             return True

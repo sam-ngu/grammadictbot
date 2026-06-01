@@ -132,7 +132,7 @@ class CoreArguments(Plugin):
             {
                 "arg": "--interact-percentage",
                 "nargs": None,
-                "help": "chance to interact with user/hashtag or place when applicable (currently in hashtag or place-posts-recent/top)",
+                "help": "chance to interact with user/hashtag when applicable (currently in hashtag-posts-top)",
                 "metavar": "50",
                 "default": "50",
             },

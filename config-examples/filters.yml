@@ -36,13 +36,13 @@ biography_banned_language: [es, ch]
 ## Filters for enabling comments
 # Action specific
 comment_hashtag_likers_top: true
-comment_hashtag_likers_recent: true
+# comment_hashtag_likers_recent removed 2026-06: Instagram removed Recent tab
 comment_hashtag_posts_top: true
-comment_hashtag_posts_recent: true
-comment_place_likers_top: true
-comment_place_likers_recent: true
-comment_place_posts_top: true
-comment_place_posts_recent: true
+# comment_hashtag_posts_recent removed 2026-06: Instagram removed Recent tab
+# comment_place_likers_top removed 2026-06: Instagram removed Places tab
+# comment_place_likers_recent removed 2026-06: Instagram removed Places tab
+# comment_place_posts_top removed 2026-06: Instagram removed Places tab
+# comment_place_posts_recent removed 2026-06: Instagram removed Places tab
 comment_blogger_followers: true
 comment_blogger_following: true
 comment_blogger_post_likers: true

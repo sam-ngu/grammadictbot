@@ -6,7 +6,7 @@ from colorama import Fore
 from GramAddict.core.device_facade import Timeout
 from GramAddict.core.views import (
     HashTagView,
-    PlacesView,
+    # PlacesView removed 2026-06: Instagram removed Places tab from search
     PostsGridView,
     ProfileView,
     TabBarView,
@@ -61,28 +61,15 @@ def nav_to_blogger(device, username, current_job):
 
 
 def nav_to_hashtag_or_place(device, target, current_job):
-    """navigate to hashtag/place/feed list"""
+    """navigate to hashtag/feed list"""
+    # Places support removed 2026-06: Instagram removed Places tab from search
+    # Recent tab support removed 2026-06: Instagram removed Recent tab from hashtag pages
     search_view = TabBarView(device).navigateToSearch()
     if not search_view.navigate_to_target(target, current_job):
         return False
 
-    TargetView = HashTagView if current_job.startswith("hashtag") else PlacesView
-
-    if current_job.endswith("recent"):
-        logger.info("Switching to Recent tab.")
-        recent_tab = TargetView(device)._getRecentTab()
-        if recent_tab.exists(Timeout.MEDIUM):
-            recent_tab.click()
-        else:
-            return False
-
-        if UniversalActions(device)._check_if_no_posts():
-            UniversalActions(device)._reload_page()
-            if UniversalActions(device)._check_if_no_posts():
-                return False
-
-    result_view = TargetView(device)._getRecyclerView()
-    FistImageInView = TargetView(device)._getFistImageView(result_view)
+    result_view = HashTagView(device)._getRecyclerView()
+    FistImageInView = HashTagView(device)._getFistImageView(result_view)
     if FistImageInView.exists():
         logger.info(f"Opening the first result for {target}.")
         FistImageInView.click()

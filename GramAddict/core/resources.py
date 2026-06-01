@@ -129,7 +129,7 @@ class ResourceID:
             f"{APP_ID}:id/recommended_user_row_content_identifier"
         )
         self.RECYCLER_VIEW = f"{APP_ID}:id/recycler_view"
-        self.ROW_PLACE_TITLE = f"{APP_ID}:id/row_place_title"
+        self.ROW_PLACE_TITLE = f"{APP_ID}:id/row_place_title"  # unused 2026-06: Instagram removed Places tab
         self.ROW_LOAD_MORE_BUTTON = f"{APP_ID}:id/row_load_more_button"
         self.ROW_PROFILE_HEADER_EMPTY_PROFILE_NOTICE_CONTAINER = (
             f"{APP_ID}:id/row_profile_header_empty_profile_notice_container"
@@ -202,7 +202,7 @@ class ResourceID:
             f"{self.ROW_FEED_HEADLINE}|{self.ROW_FEED_COMMENT_TEXTVIEW_LAYOUT}"
         )
         self.USER_LIST_CONTAINER = f"{self.FOLLOW_LIST_CONTAINER}|{self.ROW_USER_CONTAINER_BASE}|{self.RECOMMENDED_USER_ROW_CONTENT_IDENTIFIER}"
-        self.SEARCH_ROW_ITEM = f"{self.ROW_SEARCH_USER_USERNAME}|{self.ROW_HASHTAG_TEXTVIEW_TAG_NAME}|{self.ROW_PLACE_TITLE}"
+        self.SEARCH_ROW_ITEM = f"{self.ROW_SEARCH_USER_USERNAME}|{self.ROW_HASHTAG_TEXTVIEW_TAG_NAME}|{self.ROW_PLACE_TITLE}"  # ROW_PLACE_TITLE unused since 2026-06
 
         # android specific
         self.LIST = "android:id/list"
@@ -224,7 +224,7 @@ class TabBarText:
     PHOTOS_OF_YOU_CONTENT_DESC = "Photos of You"
     POSTS_CONTENT_DESC = "Grid View"
     PROFILE_CONTENT_DESC = "Profile"
-    RECENT_CONTENT_DESC = "Recent"
+    RECENT_CONTENT_DESC = "Recent"  # unused 2026-06: Instagram removed Recent tab
     REELS_CONTENT_DESC = "Reels"
     SEARCH_CONTENT_DESC = "Search and Explore"
 

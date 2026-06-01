@@ -29,14 +29,7 @@ class InteractHashtagPosts(Plugin):
             "Handles the functionality of interacting with a hashtags post owners"
         )
         self.arguments = [
-            {
-                "arg": "--hashtag-posts-recent",
-                "nargs": "+",
-                "help": "interact to hashtag post owners in recent tab",
-                "metavar": ("hashtag1", "hashtag2"),
-                "default": None,
-                "operation": True,
-            },
+            # --hashtag-posts-recent removed 2026-06: Instagram removed Recent tab from hashtag pages
             {
                 "arg": "--hashtag-posts-top",
                 "nargs": "+",
@@ -61,13 +54,10 @@ class InteractHashtagPosts(Plugin):
         self.current_mode = plugin
 
         # IMPORTANT: in each job we assume being on the top of the Profile tab already
+        # recent branch removed 2026-06: Instagram removed Recent tab from hashtag pages
         sources = [
             source
-            for source in (
-                self.args.hashtag_posts_top
-                if self.current_mode == "hashtag-posts-top"
-                else self.args.hashtag_posts_recent
-            )
+            for source in self.args.hashtag_posts_top
         ]
 
         # Start

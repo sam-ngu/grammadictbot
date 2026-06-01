@@ -242,11 +242,10 @@ def interact_with_user(
         logger.info(
             f"There {f'is {len(photos_indices)} post' if len(photos_indices)<=1 else f'are {len(photos_indices)} posts'} fully visible. Calculated in {end_time}s"
         )
+        # hashtag-posts-recent, place-posts-recent, place-posts-top removed 2026-06:
+        # Instagram removed Recent tab and Places tab from search
         if current_mode in [
-            "hashtag-posts-recent",
             "hashtag-posts-top",
-            "place-posts-recent",
-            "place-posts-top",
             "feed",
         ]:
             # in these jobs we did a like already at the post
