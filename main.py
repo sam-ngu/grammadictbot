@@ -13,7 +13,7 @@ from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports, generate_report
-from extra.utils.sentry_reporter import init_sentry, report_exception_with_screenshot
+from extra.utils.sentry_reporter import init_sentry, report_exception_with_screenshot, report_to_sentry
 import signal
 import logging
 from adbutils.errors import AdbError
@@ -89,7 +89,12 @@ def graceful_shutdown(signum, frame):
   #   "event": "testwebhook",
   # })
   # setting sessionFinishTime for analytics
-  WebhookReports().run()
+  try:
+    WebhookReports().run()
+  except Exception as e:
+    msg = f"Error sending analytics to webhook: {e}"
+    logger.error(msg)
+    report_to_sentry(message=msg, exception=e)
   shutdown()
 
 def send_need_relogin_webhook(contextMessage: str = ''):
