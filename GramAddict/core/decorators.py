@@ -20,6 +20,7 @@ from GramAddict.core.utils import (
     stop_bot,
 )
 from GramAddict.core.views import TabBarView
+from extra.utils.sentry_reporter import report_exception_with_screenshot
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,9 @@ def restart(
                 "Reached crashes limit. Bot has crashed too much! Please check what's going on."
             )
             stop_bot(device, sessions, session_state)
-            raise Exception("Reached crashes limit. Bot has crashed too much!")
+            err = Exception("Reached crashes limit. Bot has crashed too much!")
+            report_exception_with_screenshot(device, err)
+            raise err
         logger.info("Something unexpected happened. Let's try again.")
     close_instagram(device)
     check_if_crash_popup_is_there(device)
