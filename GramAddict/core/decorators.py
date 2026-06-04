@@ -79,7 +79,8 @@ def run_safely(device, device_id, sessions, session_state, screen_record, config
                 HTTPException,
                 timeout,
                 UiObjectNotFoundError,
-            ):
+            ) as e:
+                report_exception_with_screenshot(device, e)
                 try:
                     restart(
                         device,
