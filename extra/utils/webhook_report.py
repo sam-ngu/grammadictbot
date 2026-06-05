@@ -11,8 +11,7 @@ from GramAddict.core.plugin_loader import Plugin
 from GramAddict.core.webhook import send_webhook
 from extra.utils.app_state import AppState
 from GramAddict.core.session_state import SessionState
-import sentry_sdk
-from extra.utils.sentry_reporter import report_exception_with_screenshot
+from extra.utils.sentry_reporter import report_to_sentry
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +49,14 @@ def generate_report():
     session = AppState.session_state
     if not session:
         print("No session data found. Skipping report generation.", flush=True)
-        # sentry_sdk.set_context("Session state", AppState.session_state)
-        if AppState.device:
-            report_exception_with_screenshot(AppState.device, Exception("No session data found. Skipping report generation."))
-        else:
-            sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
+        report_to_sentry(
+            message="No session data found. Skipping report generation.",
+            level="warning",
+            context={"has_device": AppState.device is not None},
+            capture_screenshot_flag=AppState.device is not None,
+            device=AppState.device,
+            tags={"issue": "session_state_none"},
+        )
         return None
     duration = _calculate_session_duration(session)
     total_followed_num = 0
@@ -92,7 +94,10 @@ class WebhookReports:
         username = AppState.configyml.get("username")
         if not AppState.session_state:
             print("No session state found. Skipping report generation.", flush=True)
-            sentry_sdk.capture_message("No session data found. Skipping report generation.", level="warning")
+            report_to_sentry(
+                message="No session data found. Skipping WebhookReports.",
+                level="warning",
+            )
             return
 
         if username is None:
@@ -123,5 +128,8 @@ class WebhookReports:
             )
         else:
             print(f"Failed to send Webhook message", flush=True)
-            sentry_sdk.set_context("webhook response", response)
-            sentry_sdk.capture_message("Failed to send Webhook message", level="error")
+            report_to_sentry(
+                message="Failed to send Webhook message",
+                level="error",
+                context={"webhook_response_status": response.status_code if response else None},
+            )

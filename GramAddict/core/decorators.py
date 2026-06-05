@@ -94,6 +94,7 @@ def run_safely(device, device_id, sessions, session_state, screen_record, config
 
             except Exception as e:
                 # TODO: report to sentry
+                report_exception_with_screenshot(device, e)
                 logger.error(traceback.format_exc())
                 for exception_line in traceback.format_exception_only(type(e), e):
                     logger.critical(
@@ -136,9 +137,9 @@ def restart(
             logger.error(
                 "Reached crashes limit. Bot has crashed too much! Please check what's going on."
             )
-            stop_bot(device, sessions, session_state)
             err = Exception("Reached crashes limit. Bot has crashed too much!")
             report_exception_with_screenshot(device, err)
+            stop_bot(device, sessions, session_state)
             raise err
         logger.info("Something unexpected happened. Let's try again.")
     close_instagram(device)

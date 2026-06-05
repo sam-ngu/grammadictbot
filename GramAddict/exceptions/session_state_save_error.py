@@ -1,0 +1,3 @@
+
+class SessionStateSaveError(Exception):
+  pass

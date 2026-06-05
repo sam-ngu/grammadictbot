@@ -8,6 +8,7 @@ from pathlib import Path
 from extra.igsession import session as igsession
 import traceback
 import GramAddict
+from GramAddict.exceptions.session_state_save_error import SessionStateSaveError
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text
 from GramAddict.core.utils import shutdown
 from GramAddict.core.webhook import send_webhook
@@ -240,10 +241,12 @@ def main():
   })
 
   # save session before shutting down
-  igsession.save_session_files(ig_username)
+  try:
+    igsession.save_session_files(ig_username)
+  except Exception as e:
+    raise SessionStateSaveError('Error saving session state: ' + e.__str__())
   print('session finished.', flush=True)
   # send logs to telegram or email
-  # TODO: send finish event to webhook
 
   # if telegramyml is not None or telegramyml != '':
   #   send_logs(telegramyml['telegram-api-token'], telegramyml['telegram-chat-id'])
@@ -286,4 +289,12 @@ if __name__ == "__main__":
   #   playground_dev()
   #   sys.exit(0)
 
-  main()
+  try:
+    main()
+  except Exception as e:
+    # Safety net for uncaught exceptions:
+    # - KeyError/JSONDecodeError/YAMLError before AppState init
+    # - save_session_files() crash after 'done' webhook
+    # - send_webhook() crash when AppState not initialized
+    report_to_sentry(message=str(e), exception=e)
+    shutdown()

@@ -59,6 +59,13 @@ def _get_sentry_sdk():
             _sentry_sdk = False
     return _sentry_sdk if _sentry_sdk else None
 
+def before_send_hook(event, hint):
+    # Check if the event has a message
+    if "message" in event:
+        # Prepend your custom prefix
+        event["message"] = f"[Gramaddict] {event['message']}"
+    return event
+
 
 def init_sentry(traces_sample_rate: float = 1.0) -> bool:
     """
@@ -86,7 +93,8 @@ def init_sentry(traces_sample_rate: float = 1.0) -> bool:
             dsn=sentry_dsn,
             traces_sample_rate=traces_sample_rate,
             send_default_pii=True,
-            add_full_stack=True
+            add_full_stack=True,
+            before_send=before_send_hook
         )
         print("Sentry initialized successfully", flush=True)
         return True

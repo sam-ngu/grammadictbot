@@ -32,6 +32,7 @@ from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.storage import ACCOUNTS
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text, load_telegram_config
 from extra.igsession import session as igsession
+from extra.utils.sentry_reporter import report_to_sentry
 
 http = urllib3.PoolManager()
 logger = logging.getLogger(__name__)
@@ -512,6 +513,22 @@ def save_crash(device):
         f"Crash saved as {crash_path}.zip",
         extra={"color": Fore.GREEN},
     )
+
+    # Report crash to Sentry with crash zip attached
+    crash_zip_path = f"{crash_path}.zip"
+    report_to_sentry(
+        message=f"Bot crash saved: {crash_zip_path}",
+        level="error",
+        context={
+            "crash_path": crash_zip_path,
+            "username": configs.username,
+        },
+        capture_screenshot_flag=False,
+        screenshot_path=crash_zip_path if os.path.exists(crash_zip_path) else None,
+        tags={"crash": "true", "username": configs.username},
+    )
+
+
     # saving session as a checkpoint for the next run
     igsession.save_session_files(configs.username) 
     # report this crash to telegram

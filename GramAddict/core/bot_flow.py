@@ -100,13 +100,10 @@ def start_bot(**kwargs):
 
     # check adb connection might return false, need to reinit adb if falsey
     if not configs.args or not check_adb_connection():
-        return
+        raise Exception("ADB connection failed or no config args")
 
     if len(configs.enabled) < 1:
-        logger.error(
-            "You have to specify one of these actions: " + ", ".join(configs.actions)
-        )
-        return
+        raise Exception("No enabled actions specified: " + ", ".join(configs.actions))
     device = create_device(configs.device_id, configs.app_id)
     AppState.session_state = None
     AppState.device = device
@@ -173,6 +170,13 @@ def start_bot(**kwargs):
                 logger.error(
                     "Can't unlock your screen. There may be a passcode on it. If you would like your screen to be turned on and unlocked automatically, please remove the passcode."
                 )
+                send_webhook({
+                    'event': 'failed',
+                    'payload': {
+                        'message': 'device_screen_locked',
+                        'context': 'Cannot unlock device screen. Passcode may be set.'
+                    }
+                })
                 stop_bot(device, sessions, AppState.session_state, was_sleeping=False)
 
         logger.info("Device screen ON and unlocked.")
@@ -260,6 +264,13 @@ def start_bot(**kwargs):
                 f"Username: {AppState.session_state.my_username}, Posts: {AppState.session_state.my_posts_count}, Followers: {AppState.session_state.my_followers_count}, Following: {AppState.session_state.my_following_count}"
             )
             save_crash(device)
+            send_webhook({
+                'event': 'failed',
+                'payload': {
+                    'message': 'profile_info_missing',
+                    'context': f"Username: {AppState.session_state.my_username}, Posts: {AppState.session_state.my_posts_count}, Followers: {AppState.session_state.my_followers_count}, Following: {AppState.session_state.my_following_count}. Possible soft-ban."
+                }
+            })
             stop_bot(device, sessions, AppState.session_state)
 
         if not is_log_file_updated():
