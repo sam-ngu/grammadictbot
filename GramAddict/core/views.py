@@ -384,10 +384,13 @@ class SearchView:
             if self._check_current_view(target, job, in_place_tab=True):
                 return True
             else:
+                event = 'invalid_target'
                 # send webhook to tell user that target not found
+                if job in [  'blogger-followers','blogger-following','blogger-post-likers']:
+                    event = 'invalid_influencer'
                 message = job + " " + target + " not found."
                 send_webhook({
-                    "event": "invalid_target",
+                    "event": event,
                     "payload": {
                         "message": message,
                         "job": job,

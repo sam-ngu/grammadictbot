@@ -128,7 +128,7 @@ class InteractBloggerFollowers_Following(Plugin):
                         send_webhook({
                             'event': 'invalid_influencer',
                             'payload': {
-                                'influencer_name': source
+                                'target': source
                             }
                         })
                         logger.error(
@@ -151,7 +151,7 @@ class InteractBloggerFollowers_Following(Plugin):
                 send_webhook({
                     'event': 'invalid_influencer',
                     'payload': {
-                        'influencer_name': source
+                        'target': source
                     }
                 })
                 # if this happens it means the source was not found
