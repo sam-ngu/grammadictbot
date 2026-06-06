@@ -32,7 +32,6 @@ from GramAddict.core.resources import ResourceID as resources
 from GramAddict.core.storage import ACCOUNTS
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text, load_telegram_config
 from extra.igsession import session as igsession
-from extra.utils.sentry_reporter import report_to_sentry
 
 http = urllib3.PoolManager()
 logger = logging.getLogger(__name__)
@@ -472,6 +471,8 @@ def random_sleep(inf=0.5, sup=3.0, modulable=True, log=True):
 
 
 def save_crash(device):
+    from extra.utils.sentry_reporter import report_to_sentry
+
     directory_name = f"{__version__}_" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     crash_path = os.path.join("crashes", directory_name)
