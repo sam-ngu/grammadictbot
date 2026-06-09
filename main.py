@@ -16,6 +16,7 @@ from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports, generate_report
 from extra.utils.sentry_reporter import init_sentry, report_exception_with_screenshot, report_to_sentry
 import signal
+import threading
 import logging
 from adbutils.errors import AdbError
 from datetime import datetime
@@ -25,6 +26,10 @@ load_dotenv(override=True)
 
 # Initialize Sentry using the sentry_reporter module
 init_sentry(traces_sample_rate=1.0)
+
+# Module-level state for timeout-triggered shutdown
+_timeout_expired = False
+_current_ig_username = None
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
@@ -85,17 +90,40 @@ def send_logs(api_token, chat_id, err_message = None):
     response = telegram_bot_send_text(api_token, chat_id, err_message)
 
 def graceful_shutdown(signum, frame):
+  global _timeout_expired
   print('attempting to send analytics to webhook', flush=True)
-  # send_webhook({
-  #   "event": "testwebhook",
-  # })
-  # setting sessionFinishTime for analytics
-  try:
-    WebhookReports().run()
-  except Exception as e:
-    msg = f"Error sending analytics to webhook: {e}"
-    logger.error(msg)
-    report_to_sentry(message=msg, exception=e)
+
+  if _timeout_expired:
+    # Timeout-triggered shutdown: send 'done' webhook with report
+    print('Auto-shutdown timeout expired. Sending done webhook...', flush=True)
+    try:
+      analytic_report = generate_report()
+      send_webhook({
+        'event': 'done',
+        'payload': {
+          'message': 'Auto shutdown: Timeout expired',
+          'report': analytic_report
+        }
+      })
+    except Exception as e:
+      logger.error(f"Error sending timeout done webhook: {e}")
+      report_to_sentry(message=str(e), exception=e)
+  else:
+    # setting sessionFinishTime for analytics
+    try:
+      WebhookReports().run()
+      # Save session before shutdown
+      if _current_ig_username:
+        try:
+          igsession.save_session_files(_current_ig_username)
+        except Exception as e:
+          logger.error(f"Error saving session state: {e}")
+          report_to_sentry(message=str(e), exception=e)
+    except Exception as e:
+      msg = f"Error sending analytics to webhook: {e}"
+      logger.error(msg)
+      report_to_sentry(message=msg, exception=e)
+
   shutdown()
 
 def send_need_relogin_webhook(contextMessage: str = ''):
@@ -148,6 +176,25 @@ def main():
   ig_username = configyml['username']
   print('igusername', ig_username, flush=True)
 
+  global _current_ig_username
+  _current_ig_username = ig_username
+
+  # Auto-shutdown timeout (seconds). 0 or unset = disabled.
+  # subtracting 10 min buffer, if this failed to execute , there is the server level catch that shutdown machines
+  timeout_seconds = int(os.environ.get('GRAMADDICT_RUNNING_SECS', '0')) - 10 * 60
+  timer = None
+
+  if timeout_seconds > 0:
+    def _on_timeout():
+      global _timeout_expired
+      _timeout_expired = True
+      os.kill(os.getpid(), signal.SIGTERM)
+
+    timer = threading.Timer(timeout_seconds, _on_timeout)
+    timer.daemon = True
+    timer.start()
+    print(f'Auto-shutdown timer set: {timeout_seconds}s', flush=True)
+
   # payload is an object that contains the text content of the file eg:
   # {
   # s3Credentials: 'text', 
@@ -177,6 +224,8 @@ def main():
       })
       if res == 'ig_launch_error':
         send_need_relogin_webhook('ig unable to launch, usually because of corrupted session in the cloud.')
+      if timer:
+        timer.cancel()
       shutdown()
       return
     else:
@@ -184,6 +233,8 @@ def main():
       # if result is not 'already_logged_in', should send webhook failed
       if result != 'already_logged_in':
         send_need_relogin_webhook('session auth data corrupted in the cloud.')
+        if timer:
+          timer.cancel()
         shutdown()
         return
   except Exception as e:
@@ -211,6 +262,8 @@ def main():
     GramAddict.run()
   except Exception as e:
     print('exception: ', e, flush=True)
+    if timer:
+      timer.cancel()
     payload = {
       'message': e.__str__()
     }
@@ -228,6 +281,8 @@ def main():
 
     shutdown()
     return
+  if timer:
+    timer.cancel()
   print('Sending done webhook...', flush=True)
 
   analytic_report = generate_report()
