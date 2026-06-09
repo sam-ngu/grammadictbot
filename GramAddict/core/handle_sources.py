@@ -103,7 +103,7 @@ def handle_blogger(
     interaction,
     is_follow_limit_reached,
 ):
-    if not nav_to_blogger(device, blogger, session_state.my_username):
+    if not nav_to_blogger(device, blogger, current_job):
         return
     can_interact = False
     if storage.is_user_in_blacklist(blogger):
