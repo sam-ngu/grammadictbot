@@ -386,7 +386,7 @@ class SearchView:
             else:
                 event = 'invalid_target'
                 # send webhook to tell user that target not found
-                if job in [  'blogger-followers','blogger-following','blogger-post-likers']:
+                if job in [ 'blogger', 'blogger-followers','blogger-following','blogger-post-likers']:
                     event = 'invalid_influencer'
                 message = job + " " + target + " not found."
                 send_webhook({
