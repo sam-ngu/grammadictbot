@@ -182,6 +182,10 @@ def main():
   # Auto-shutdown timeout (seconds). 0 or unset = disabled.
   # subtracting 10 min buffer, if this failed to execute , there is the server level catch that shutdown machines
   timeout_seconds = int(os.environ.get('GRAMADDICT_RUNNING_SECS', '0')) - 10 * 60
+  six_hours = 3600 * 6
+  # maximum of 6 hours
+  if timeout_seconds < 0 or timeout_seconds > six_hours:
+    timeout_seconds = six_hours
   timer = None
 
   if timeout_seconds > 0:
