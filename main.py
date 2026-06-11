@@ -11,7 +11,7 @@ import GramAddict
 from GramAddict.exceptions.session_state_save_error import SessionStateSaveError
 from GramAddict.plugins.telegram import telegram_bot_send_file, telegram_bot_send_text
 from GramAddict.core.utils import shutdown
-from GramAddict.core.webhook import send_webhook
+from GramAddict.core.webhook import send_webhook, ProfileVisitBatch
 from extra.utils.app_state import AppState
 from extra.utils.webhook_report import WebhookReports, generate_report
 from extra.utils.sentry_reporter import init_sentry, report_exception_with_screenshot, report_to_sentry
@@ -92,6 +92,12 @@ def send_logs(api_token, chat_id, err_message = None):
 def graceful_shutdown(signum, frame):
   global _timeout_expired
   print('attempting to send analytics to webhook', flush=True)
+
+  # Flush any remaining profile visit webhooks
+  try:
+    ProfileVisitBatch.flush()
+  except Exception as e:
+    print(f'Error flushing profile visit webhooks: {e}', flush=True)
 
   if _timeout_expired:
     # Timeout-triggered shutdown: send 'done' webhook with report
@@ -287,6 +293,13 @@ def main():
     return
   if timer:
     timer.cancel()
+
+  # Flush any remaining profile visit webhooks before sending done
+  try:
+    ProfileVisitBatch.flush()
+  except Exception as e:
+    print(f'Error flushing profile visit webhooks: {e}', flush=True)
+
   print('Sending done webhook...', flush=True)
 
   analytic_report = generate_report()

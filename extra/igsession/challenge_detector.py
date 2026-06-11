@@ -190,6 +190,12 @@ SCREEN_PATTERNS = {
         "timeout": DEFAULT_2FA_TIMEOUT,
         "action": "wait_for_code",
     },
+    "TWO_FACTOR_CHECK_EMAIL": {
+        "patterns": ["To log in, enter the code we sent to"],
+        "category": ChallengeCategory.USER_WAIT,
+        "timeout": 0,
+        "action": "wait_for_code",
+    },
     "TWO_FACTOR_WHATSAPP": {
         "patterns": ["whatsapp", "wa_key", "whatsapp verification", "whatsapp code"],
         "category": ChallengeCategory.USER_WAIT,
@@ -261,7 +267,7 @@ SCREEN_PATTERNS = {
         "action": "manual_intervention",
     },
     "WRONG_PASSWORD_CHECK_EMAIL": {
-        "patterns": ["Check your email"],
+        "patterns": ["To log in, use the link we sent to"],
         "category": ChallengeCategory.IMPOSSIBLE,
         "timeout": 0,
         "action": "wrong_password",

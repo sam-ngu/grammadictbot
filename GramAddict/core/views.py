@@ -1789,6 +1789,16 @@ class ProfileView(ActionBarView):
         )
         return private_profile_view.exists()
 
+    def isVerified(self):
+        verified_badge = self.device.find(
+            resourceIdMatches=case_insensitive_re(
+                [
+                    ResourceID.ACTION_BAR_TITLE_VERIFIED_BADGE,
+                ]
+            )
+        )
+        return verified_badge.exists()
+
     def StoryRing(self) -> DeviceFacade.View:
         return self.device.find(
             resourceId=ResourceID.REEL_RING,

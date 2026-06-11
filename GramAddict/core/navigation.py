@@ -94,9 +94,19 @@ def nav_to_post_likers(device, username, my_username):
     posts_count = profile_view.getPostsCount()
     is_empty = posts_count == 0
     if is_private or is_empty:
+        # Minimal payload for skipped accounts — no point collecting full data
+        from GramAddict.core.webhook import queue_profile_visit_webhook
+        queue_profile_visit_webhook(username, context="source", is_private=is_private, posts_count=posts_count)
         private_empty = "Private" if is_private else "Empty"
         logger.info(f"{private_empty} account.", extra={"color": f"{Fore.GREEN}"})
         return False
+
+    # Full payload for valid source accounts
+    from GramAddict.core.webhook import queue_profile_visit_webhook
+    from GramAddict.core.filter import Filter
+    profile_data = Filter(device).get_all_data(device)
+    queue_profile_visit_webhook(username, context="source", profile_data=profile_data)
+
     logger.info(f"Opening the first post of {username}.")
     ProfileView(device).swipe_to_fit_posts()
     PostsGridView(device).navigateToPost(0, 0)

@@ -64,24 +64,24 @@ def main():
   # search_list_view.scroll(Direction.DOWN)
   # device.swipe(direction=Direction.DOWN)
   # hierachy = device.dump_hierarchy()
-  # xml_dump = device.deviceV2.dump_hierarchy()
+  xml_dump = device.deviceV2.dump_hierarchy()
 
-  # print(xml_dump, flush=True)
+  print(xml_dump, flush=True)
 
-  tab_layout = device.find(
-      resourceIdMatches=case_insensitive_re(
-          ResourceID.VIEW_SWITCHER_CONTAINER
-      ),
-  )
+  # tab_layout = device.find(
+  #     resourceIdMatches=case_insensitive_re(
+  #         ResourceID.VIEW_SWITCHER_CONTAINER
+  #     ),
+  # )
 
-  print('tab_layout', tab_layout.exists(Timeout.SHORT), flush=True)
+  # print('tab_layout', tab_layout.exists(Timeout.SHORT), flush=True)
 
-  tab_text_view = tab_layout.child(
-      # resourceIdMatches=case_insensitive_re(ResourceID.TAB_BUTTON_NAME_TEXT),
-      textMatches=case_insensitive_re('TAGS'),
-  )
+  # tab_text_view = tab_layout.child(
+  #     # resourceIdMatches=case_insensitive_re(ResourceID.TAB_BUTTON_NAME_TEXT),
+  #     textMatches=case_insensitive_re('TAGS'),
+  # )
 
-  print('tab_text_view', tab_text_view.exists(Timeout.SHORT), flush=True)
+  # print('tab_text_view', tab_text_view.exists(Timeout.SHORT), flush=True)
 
   # check_email = device.find(className='android.view.View', text="Check your email")
   # try_another_way = device.find(className='android.view.View', text="Try another way")

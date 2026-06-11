@@ -95,6 +95,7 @@ class Profile(object):
         follow_button_text,
         is_restricted,
         is_private,
+        is_verified,
         has_business_category,
         posts_count,
         biography,
@@ -108,6 +109,7 @@ class Profile(object):
         self.follow_button_text = follow_button_text
         self.is_restricted = is_restricted
         self.is_private = is_private
+        self.is_verified = is_verified
         self.has_business_category = has_business_category
         self.posts_count = posts_count
         self.biography = biography
@@ -237,6 +239,11 @@ class Filter:
             field_skip_if_public = self.conditions.get(FIELD_SKIP_PUBLIC, False)
 
         profile_data = self.get_all_data(device)
+
+        # Queue profile visit webhook for target account
+        from GramAddict.core.webhook import queue_profile_visit_webhook
+        queue_profile_visit_webhook(username, context="target", profile_data=profile_data)
+
         if profile_data.is_restricted:
             logger.info(
                 "This is a restricted profile, skip.",
@@ -614,6 +621,7 @@ class Filter:
                 follow_button_text=self._get_follow_button_text(device, profileView),
                 is_restricted=is_restricted,
                 is_private=self._is_private_account(device, profileView),
+                is_verified=self._is_verified(device, profileView),
                 has_business_category=self._has_business_category(device, profileView),
                 posts_count=self._get_posts_count(device, profileView),
                 biography=self._get_profile_biography(device, profileView),
@@ -628,6 +636,7 @@ class Filter:
                 follow_button_text=None,
                 is_restricted=is_restricted,
                 is_private=None,
+                is_verified=None,
                 has_business_category=None,
                 posts_count=None,
                 biography=None,
@@ -678,6 +687,14 @@ class Filter:
             logger.debug(f"Error: {e}")
 
         return private
+
+    @staticmethod
+    def _is_verified(device, profileView=None) -> bool:
+        profileView = ProfileView(device) if profileView is None else profileView
+        try:
+            return profileView.isVerified()
+        except Exception:
+            return False
 
     @staticmethod
     def _get_profile_biography(device, profileView: ProfileView = None) -> str:

@@ -20,4 +20,3 @@ class AppState:
   def __new__(cls, configyml: dict):
     cls.configyml = configyml
     pass
-
